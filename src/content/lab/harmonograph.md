@@ -5,7 +5,7 @@ summary: >-
   A generative harmonograph — the looping curves drawn by a pair of damped
   pendulums. Click or hit space for a new figure; every one is seeded and
   shareable.
-url: /lab/harmonograph/
+url: /lab/harmonograph/index.html
 tech:
   - canvas
   - generative

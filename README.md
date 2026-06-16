@@ -96,8 +96,8 @@ Appears at `/blog/my-post` and in the RSS feed at `/rss.xml`.
 ## Add a Lab app
 
 1. Drop a **self-contained** app into its own folder in `public/lab/`:
-   `public/lab/my-tool/index.html`. It's served verbatim at `/folio/lab/my-tool/`
-   and can use canvas/WebGL/three.js/whatever.
+   `public/lab/my-tool/index.html`. It's served verbatim and can use
+   canvas/WebGL/three.js/whatever.
    **Use relative asset paths** (`./script.js`, not `/script.js`) — the site lives under `/folio/`.
 2. Register it with `src/content/lab/my-tool.md`:
 
@@ -106,7 +106,7 @@ Appears at `/blog/my-post` and in the RSS feed at `/rss.xml`.
 title: My Tool
 date: 2026-03-20
 summary: What it does, in a sentence.
-url: /lab/my-tool/        # path under the site base
+url: /lab/my-tool/index.html   # point at the file so it resolves in dev + prod
 tech: [canvas, generative]
 newTab: false             # true → open in a new tab
 # thumb: ./my-tool.png    # optional static thumbnail; omit for a live preview
