@@ -1,0 +1,85 @@
+---
+import { CATEGORIES } from '@/consts';
+
+interface Props {
+  // Categories that actually have projects, in display order.
+  available: string[];
+}
+const { available } = Astro.props;
+const cats = CATEGORIES.filter((c) => available.includes(c));
+---
+<div
+  class="filterbar flex flex-wrap gap-x-1 gap-y-2 border-y border-line py-3"
+  role="group"
+  aria-label="Filter projects by category"
+>
+  <button class="filter-btn is-active" data-filter="All" aria-pressed="true">All</button>
+  {
+    cats.map((c) => (
+      <button class="filter-btn" data-filter={c} aria-pressed="false">
+        {c}
+      </button>
+    ))
+  }
+</div>
+
+<style>
+  .filter-btn {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    padding: 0.35rem 0.7rem;
+    border: 1px solid transparent;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease;
+    cursor: pointer;
+  }
+  .filter-btn:hover {
+    color: var(--color-ink);
+  }
+  .filter-btn.is-active {
+    color: var(--color-accent-ink);
+    background-color: var(--color-accent);
+  }
+</style>
+
+<script>
+  function initFilter() {
+    const bars = document.querySelectorAll<HTMLElement>('.filterbar');
+    bars.forEach((bar) => {
+      if (bar.dataset.bound) return;
+      bar.dataset.bound = 'true';
+      const grid = document.getElementById('project-grid');
+      if (!grid) return;
+      const cards = Array.from(grid.querySelectorAll<HTMLElement>('[data-category]'));
+      const empty = document.getElementById('filter-empty');
+
+      bar.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.filter-btn');
+        if (!btn) return;
+        const filter = btn.dataset.filter ?? 'All';
+
+        bar.querySelectorAll('.filter-btn').forEach((b) => {
+          const active = b === btn;
+          b.classList.toggle('is-active', active);
+          b.setAttribute('aria-pressed', String(active));
+        });
+
+        let shown = 0;
+        cards.forEach((card) => {
+          const match = filter === 'All' || card.dataset.category === filter;
+          card.style.display = match ? '' : 'none';
+          if (match) shown++;
+        });
+        if (empty) empty.hidden = shown !== 0;
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', initFilter);
+  if (document.readyState !== 'loading') initFilter();
+  else document.addEventListener('DOMContentLoaded', initFilter);
+</script>

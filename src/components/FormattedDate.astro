@@ -1,0 +1,15 @@
+---
+interface Props {
+  date: Date;
+  // 'year' shows just the year (projects); 'full' shows month + year (posts).
+  mode?: 'year' | 'full';
+}
+const { date, mode = 'full' } = Astro.props;
+const opts: Intl.DateTimeFormatOptions =
+  mode === 'year'
+    ? { year: 'numeric' }
+    : { year: 'numeric', month: 'long' };
+---
+<time datetime={date.toISOString()}>
+  {date.toLocaleDateString('en-AU', opts)}
+</time>

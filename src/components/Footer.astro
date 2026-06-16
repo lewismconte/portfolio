@@ -1,0 +1,35 @@
+---
+import { SITE, SOCIAL, NAV } from '@/consts';
+import { withBase } from '@/lib/url';
+const year = new Date().getFullYear();
+---
+<footer class="mt-24 border-t border-line">
+  <div class="container-page grid gap-8 py-12 md:grid-cols-12 md:py-16">
+    <div class="md:col-span-5">
+      <p class="font-display text-lg font-semibold tracking-tight">{SITE.title}</p>
+      <p class="mt-2 max-w-xs text-sm text-ink-muted">{SITE.tagline} — Melbourne / Sydney.</p>
+    </div>
+
+    <nav class="md:col-span-3" aria-label="Footer">
+      <p class="label mb-3">Index</p>
+      <ul class="space-y-1.5">
+        {NAV.map((item) => (
+          <li><a href={withBase(item.href)} class="link-underline text-sm text-ink-muted hover:text-ink">{item.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="md:col-span-4">
+      <p class="label mb-3">Elsewhere</p>
+      <ul class="space-y-1.5 text-sm">
+        <li><a href={`mailto:${SOCIAL.email}`} class="link-underline text-ink-muted hover:text-ink">{SOCIAL.email}</a></li>
+        <li><a href={SOCIAL.github} target="_blank" rel="me noopener" class="link-underline text-ink-muted hover:text-ink">GitHub</a></li>
+        <li><a href={SOCIAL.linkedin} target="_blank" rel="me noopener" class="link-underline text-ink-muted hover:text-ink">LinkedIn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="container-page flex flex-col gap-1 border-t border-line py-5 text-xs text-ink-faint sm:flex-row sm:items-center sm:justify-between">
+    <span>© {year} {SITE.author}</span>
+    <span class="font-mono">Built with Astro · Hosted on GitHub Pages</span>
+  </div>
+</footer>

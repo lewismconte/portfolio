@@ -1,0 +1,60 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { withBase } from '@/lib/url';
+
+interface Props {
+  entry: CollectionEntry<'lab'>;
+}
+const { entry } = Astro.props;
+const { data } = entry;
+const href = withBase(data.url);
+---
+<a
+  href={href}
+  target={data.newTab ? '_blank' : undefined}
+  rel={data.newTab ? 'noopener' : undefined}
+  class="group block"
+  data-reveal
+>
+  <div class="relative aspect-[4/3] overflow-hidden border border-line bg-bg">
+    {
+      data.thumb ? (
+        <Image
+          src={data.thumb}
+          alt={data.thumbAlt ?? data.title}
+          widths={[400, 800]}
+          sizes="(max-width: 640px) 100vw, 50vw"
+          class="h-full w-full object-cover"
+        />
+      ) : (
+        // Live preview of the actual app, frozen (non-interactive).
+        <div class="absolute inset-0 overflow-hidden">
+          <iframe
+            src={href}
+            title={`${data.title} preview`}
+            loading="lazy"
+            tabindex="-1"
+            aria-hidden="true"
+            class="pointer-events-none h-full w-full border-0"
+          />
+        </div>
+      )
+    }
+    <!-- launch affordance -->
+    <span
+      class="label absolute right-3 top-3 bg-bg/70 px-2 py-1 opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100"
+      >Launch ↗</span
+    >
+    <span
+      class="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-x-100"
+      aria-hidden="true"></span>
+  </div>
+  <div class="mt-3 flex items-center gap-2">
+    {data.tech.map((t) => <span class="label !text-ink-faint">{t}</span>)}
+  </div>
+  <h3 class="mt-1 text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-accent">
+    {data.title}
+  </h3>
+  <p class="mt-1 max-w-sm text-sm text-ink-muted">{data.summary}</p>
+</a>
