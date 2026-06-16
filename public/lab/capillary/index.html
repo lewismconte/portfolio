@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Capillary — branching facade studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3eee4;--paper-2:#ece4d5;--paper-3:#e3d9c6;
+    --ink:#211c17;--ink-soft:#6f6557;--line:#cabfad;
+    --rail:#211c17;--rail-soft:#322b22;--rail-line:#403828;--paper-on-rail:#e9e0d0;
+    --accent:#8c2f2a;--accent-2:#b8443a;--accent-dim:#5e2320;
+    --d1:#efd9b4;--d2:#e3b487;--d3:#d68a60;--d4:#b8443a;--d5:#8c2f2a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:"JetBrains Mono",monospace;font-size:12px;-webkit-font-smoothing:antialiased;overflow:hidden}
+  .app{display:grid;grid-template-columns:312px 1fr;height:100vh}
+  .rail{background:var(--rail);color:var(--paper-on-rail);border-right:1px solid var(--rail-line);overflow-y:auto;padding:0 0 40px}
+  .rail::-webkit-scrollbar{width:9px}
+  .rail::-webkit-scrollbar-thumb{background:var(--rail-line)}
+  .brand{padding:22px 22px 18px;border-bottom:1px solid var(--rail-line);position:sticky;top:0;background:var(--rail);z-index:2}
+  .brand h1{font-family:"Fraunces",serif;font-weight:600;font-style:italic;font-size:25px;line-height:1;margin:0;letter-spacing:.3px;color:var(--paper)}
+  .brand .sub{margin-top:7px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a8e7b}
+  .sect{padding:18px 22px;border-bottom:1px solid var(--rail-line)}
+  .sect h2{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#a89a84;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .sect h2 .n{font-family:"Fraunces",serif;font-style:italic;color:var(--accent-2);font-size:13px;letter-spacing:0}
+  .row{margin-bottom:14px}
+  .row:last-child{margin-bottom:0}
+  label.lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  label.lab span:first-child{color:#cdbfa8;font-size:11px}
+  label.lab .val{color:var(--paper);font-weight:700;font-size:11px}
+  input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:var(--rail-line);outline:none;margin:8px 0 2px;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--paper);border:3px solid var(--accent);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--paper);border:3px solid var(--accent);cursor:pointer}
+  .btn{appearance:none;border:1px solid var(--rail-line);background:var(--rail-soft);color:var(--paper-on-rail);font-family:inherit;font-size:11px;letter-spacing:.04em;padding:9px 10px;cursor:pointer;border-radius:3px;transition:.13s;width:100%}
+  .btn:hover{border-color:#5a5040;background:#3a3228}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;letter-spacing:.05em;padding:12px;text-transform:uppercase;font-size:11px}
+  .btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
+  .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .swatches{display:flex;gap:6px}
+  .swatches .sw{flex:1;aspect-ratio:1;border-radius:3px;cursor:pointer;border:2px solid transparent;display:flex;align-items:flex-end;justify-content:center;font-size:9px;font-weight:700;padding-bottom:2px}
+  .swatches .sw.on{border-color:var(--paper);box-shadow:0 0 0 1px var(--rail)}
+  .sw0{background:repeating-linear-gradient(45deg,#2c261d,#2c261d 4px,#241f18 4px,#241f18 8px);color:#8a7d68}
+  .sw1{background:var(--d1);color:#7a5a2a}.sw2{background:var(--d2);color:#6e3f20}.sw3{background:var(--d3);color:#fff}.sw4{background:var(--d4);color:#fff}.sw5{background:var(--d5);color:#fff}
+  .check{display:flex;align-items:center;gap:9px;cursor:pointer;padding:3px 0;color:#cdbfa8}
+  .check input{display:none}
+  .check .box{width:15px;height:15px;border:1px solid #5a5040;border-radius:3px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;transition:.12s}
+  .check input:checked + .box{background:var(--accent);border-color:var(--accent)}
+  .check input:checked + .box::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-1px)}
+  .hint{color:#8a7d68;font-size:10px;line-height:1.6;margin-top:4px}
+  .stage{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--paper-2)}
+  .toolbar{display:flex;align-items:center;gap:18px;padding:11px 20px;background:var(--paper);border-bottom:1px solid var(--line);flex-wrap:wrap;z-index:1}
+  .tgroup{display:flex;align-items:center;gap:9px}
+  .tgroup .glab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .tool{border:1px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-size:11px;padding:8px 13px;border-radius:3px;cursor:pointer;transition:.12s;letter-spacing:.03em;display:flex;align-items:center;gap:7px}
+  .tool:hover{border-color:var(--accent)}
+  .tool.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .tool svg{width:13px;height:13px}
+  .div{width:1px;height:24px;background:var(--line)}
+  .sw-mini{display:flex;gap:4px}
+  .sw-mini .m{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent}
+  .sw-mini .m.on{border-color:var(--ink)}
+  .toolbar .stat{margin-left:auto;font-size:10px;color:var(--ink-soft);letter-spacing:.04em;text-align:right;line-height:1.5}
+  .toolbar .stat b{color:var(--accent);font-weight:700}
+  .canvas-wrap{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:34px;background:radial-gradient(circle at 1px 1px, rgba(33,28,23,.045) 1px, transparent 0) 0 0/22px 22px,var(--paper-2)}
+  .paper-frame{background:var(--paper);box-shadow:0 1px 0 rgba(255,255,255,.6),0 18px 50px -18px rgba(33,28,23,.45),0 0 0 1px rgba(33,28,23,.08);position:relative}
+  .paper-frame::before,.paper-frame::after{content:"";position:absolute;width:11px;height:11px;border:1px solid var(--accent);opacity:.55}
+  .paper-frame::before{top:8px;left:8px;border-right:none;border-bottom:none}
+  .paper-frame::after{bottom:8px;right:8px;border-left:none;border-top:none}
+  canvas{display:block;cursor:crosshair;touch-action:none}
+  .footer{padding:13px 20px;background:var(--paper);border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .footer .exp-opts{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .footer .exp-check{display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--ink-soft);font-size:10px;letter-spacing:.04em}
+  .footer .exp-check input{accent-color:var(--accent);width:14px;height:14px}
+  .footer .spacer{flex:1}
+  .ebtn{border:1px solid var(--ink);background:var(--ink);color:var(--paper);font-family:inherit;font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:10px 18px;border-radius:3px;cursor:pointer;font-weight:700;transition:.12s}
+  .ebtn:hover{background:var(--accent);border-color:var(--accent)}
+  .ebtn.ghost{background:transparent;color:var(--ink);font-weight:500}
+  .ebtn.ghost:hover{background:var(--paper-3);border-color:var(--ink)}
+  .toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:4px;font-size:11px;letter-spacing:.04em;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:0 10px 30px -8px rgba(0,0,0,.5)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (max-width:880px){.app{grid-template-columns:1fr;grid-template-rows:auto 1fr}.rail{max-height:42vh}.brand{position:static}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><h1>Capillary</h1><div class="sub">Branching facade studio</div></div>
+
+    <div class="sect">
+      <h2><span class="n">01</span> Grid &amp; bounds</h2>
+      <div class="row"><label class="lab"><span>Columns</span><span class="val" id="colsVal">24</span></label><input type="range" id="cols" min="4" max="64" value="24"></div>
+      <div class="row"><label class="lab"><span>Rows</span><span class="val" id="rowsVal">32</span></label><input type="range" id="rows" min="4" max="64" value="32"></div>
+      <div class="row btn-grid"><button class="btn" id="fillAll">Fill all · 1</button><button class="btn" id="clearGrid">Clear field</button></div>
+      <div class="hint">Paint cells to define the panel outline. Cells set to 0 are outside the shape.</div>
+    </div>
+
+    <div class="sect">
+      <h2><span class="n">02</span> Density field</h2>
+      <div class="row"><div class="swatches" id="swatches">
+        <div class="sw sw0" data-d="0">0</div><div class="sw sw1" data-d="1">1</div><div class="sw sw2" data-d="2">2</div>
+        <div class="sw sw3 on" data-d="3">3</div><div class="sw sw4" data-d="4">4</div><div class="sw sw5" data-d="5">5</div>
+      </div></div>
+      <div class="hint">Higher values pull more branching toward that cell — use it to optimise where capillaries concentrate.</div>
+    </div>
+
+    <div class="sect">
+      <h2><span class="n">03</span> Cell subdivision</h2>
+      <label class="check"><input type="checkbox" id="autoSub" checked><span class="box"></span>Auto — finer cells where dense</label>
+      <div class="row" style="margin-top:12px"><label class="lab"><span>Max subdivision</span><span class="val" id="maxSubVal">2 → ¼ size</span></label><input type="range" id="maxSub" min="1" max="3" value="2"></div>
+      <div class="hint">Splits high-density (red) cells into smaller cells, so capillaries there grow finer and pack tighter — more linework per area = more wetted surface for evaporation. Pick the <b>Subdiv</b> tool to refine cells by hand (click steps finer).</div>
+    </div>
+
+    <div class="sect">
+      <h2><span class="n">04</span> Roots</h2>
+      <div class="row btn-grid-3">
+        <button class="btn" data-edge="bottom">↑ Base</button><button class="btn" data-edge="top">↓ Top</button><button class="btn" data-edge="left">→ Left</button>
+        <button class="btn" data-edge="right">← Right</button><button class="btn" data-edge="center">• Centre</button><button class="btn" id="clearRoots">Clear</button>
+      </div>
+      <div class="hint">Or pick the <b>Root</b> tool and click to place feed-points. Fewer roots + higher reach = longer connected veins.</div>
+    </div>
+
+    <div class="sect">
+      <h2><span class="n">05</span> Growth</h2>
+      <div class="row"><label class="lab"><span>Detail · attractors</span><span class="val" id="detVal">2.2</span></label><input type="range" id="detail" min="0.4" max="6" step="0.1" value="2.2"></div>
+      <div class="row"><label class="lab"><span>Segment length</span><span class="val" id="segVal">0.45×</span></label><input type="range" id="seg" min="0.18" max="0.95" step="0.01" value="0.45"></div>
+      <div class="row"><label class="lab"><span>Reach · attraction</span><span class="val" id="reachVal">3.0×</span></label><input type="range" id="reach" min="1.2" max="7" step="0.1" value="3.0"></div>
+      <div class="row"><label class="lab"><span>Spacing · kill radius</span><span class="val" id="killVal">0.9×</span></label><input type="range" id="kill" min="0.4" max="3" step="0.05" value="0.9"></div>
+      <div class="row"><label class="lab"><span>Max splits / node</span><span class="val" id="degVal">3</span></label><input type="range" id="deg" min="2" max="6" step="1" value="3"></div>
+      <div class="row"><label class="lab"><span>Cross-link · loops</span><span class="val" id="linkVal">1.2×</span></label><input type="range" id="link" min="0" max="3" step="0.1" value="1.2"></div>
+      <div class="row"><label class="lab"><span>Trim orphans</span><span class="val" id="trimVal">3</span></label><input type="range" id="trim" min="0" max="14" step="1" value="3"></div>
+      <div class="row"><label class="lab"><span>Trunk weight</span><span class="val" id="trunkVal">7</span></label><input type="range" id="trunk" min="1" max="16" step="0.5" value="7"></div>
+      <div class="row btn-grid"><button class="btn" id="reseed">↻ New seed</button><button class="btn" id="curveToggle">Curved: ON</button></div>
+    </div>
+
+    <div class="sect">
+      <h2><span class="n">06</span> View</h2>
+      <label class="check"><input type="checkbox" id="vGrid" checked><span class="box"></span>Grid &amp; subdivisions</label>
+      <label class="check"><input type="checkbox" id="vDensity" checked><span class="box"></span>Density field</label>
+      <label class="check"><input type="checkbox" id="vAttract"><span class="box"></span>Attractor points</label>
+      <label class="check"><input type="checkbox" id="vRoots" checked><span class="box"></span>Roots</label>
+      <label class="check"><input type="checkbox" id="vInk"><span class="box"></span>Oxblood linework</label>
+    </div>
+
+    <div class="sect" style="border-bottom:none">
+      <button class="btn primary" id="generate">Generate branches</button>
+      <div class="hint" style="text-align:center;margin-top:10px">⌘/Ctrl + Enter</div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="toolbar">
+      <div class="tgroup">
+        <span class="glab">Tool</span>
+        <button class="tool on" data-tool="brush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21l4-1 11-11-3-3L4 17z"/></svg>Brush</button>
+        <button class="tool" data-tool="rect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>Rect</button>
+        <button class="tool" data-tool="subdiv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Subdiv</button>
+        <button class="tool" data-tool="root"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Root</button>
+      </div>
+      <div class="div"></div>
+      <div class="tgroup"><span class="glab">Brush</span><input type="range" id="brushSize" min="1" max="6" value="1" style="width:70px;margin:0"><span class="val" id="brushVal" style="color:var(--accent);font-weight:700">1</span></div>
+      <div class="div"></div>
+      <div class="tgroup"><span class="glab">Density</span><div class="sw-mini" id="miniSw"></div></div>
+      <div class="stat" id="stat">— cells · — roots<br><b>not generated</b></div>
+    </div>
+    <div class="canvas-wrap"><div class="paper-frame"><canvas id="cv"></canvas></div></div>
+    <div class="footer">
+      <div class="exp-opts">
+        <span class="glab" style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)">SVG layers</span>
+        <label class="exp-check"><input type="checkbox" id="exBranch" checked> Branches</label>
+        <label class="exp-check"><input type="checkbox" id="exBound"> Boundary</label>
+        <label class="exp-check"><input type="checkbox" id="exGrid"> Grid</label>
+        <label class="exp-check"><input type="checkbox" id="exDens"> Density</label>
+        <span class="glab" style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-left:6px">Network</span>
+        <label class="exp-check"><input type="checkbox" id="netLoops"> Include loops</label>
+      </div>
+      <div class="spacer"></div>
+      <button class="ebtn ghost" id="exportPng">PNG</button>
+      <button class="ebtn ghost" id="exportNet">Network .SVG</button>
+      <button class="ebtn" id="exportSvg">Export .SVG</button>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const cv = $("#cv"), ctx = cv.getContext("2d");
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+
+  let cols=24, rows=32, cell=24, margin=18;
+  let grid=[];                // density [r][c]
+  let level=[];               // subdivision level [r][c]
+  let roots=[];               // {x,y}
+  let tree=null;
+  let attractors=[];
+  let seed=Math.floor(Math.random()*1e9);
+  let tool="brush", paintD=3, brushSize=1, curved=true;
+  let dragRect=null, painting=false;
+
+  const view={grid:true,density:true,attract:false,roots:true,ink:false};
+  const params={detail:2.2,seg:0.45,reach:3.0,kill:0.9,trunk:7,link:1.2,trim:3,maxdeg:3};
+  const subdiv={auto:true,max:2};
+  const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+  const DCOL=["",css('--d1'),css('--d2'),css('--d3'),css('--d4'),css('--d5')];
+
+  function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+  function newGrid(nc,nr,preserve){
+    const oG=grid,oL=level,oc=cols,or=rows;
+    grid=[];level=[];
+    for(let r=0;r<nr;r++){const gr=[],lr=[];for(let c=0;c<nc;c++){
+      let v=0,l=0;
+      if(preserve&&oG.length){const sr=Math.floor(r/nr*or),sc=Math.floor(c/nc*oc);if(oG[sr]&&oG[sr][sc]!=null){v=oG[sr][sc];l=(oL[sr]&&oL[sr][sc])||0;}}
+      gr.push(v);lr.push(l);
+    }grid.push(gr);level.push(lr);}
+    cols=nc;rows=nr;resize();
+  }
+  function resize(){
+    const target=Math.min(820,Math.max(560,26*Math.max(cols,rows)));
+    cell=Math.max(7,Math.floor((target-margin*2)/Math.max(cols,rows)));
+    const W=cols*cell+margin*2,H=rows*cell+margin*2;
+    cv.style.width=W+"px";cv.style.height=H+"px";cv.width=W*dpr;cv.height=H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);draw();
+  }
+  function logicalSize(){return {W:cols*cell+margin*2,H:rows*cell+margin*2};}
+
+  function computeAuto(){
+    if(!subdiv.auto)return;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      const d=grid[r][c];
+      level[r][c]= d>0 ? Math.max(0,Math.min(subdiv.max,Math.round((d-1)/4*subdiv.max))) : 0;
+    }
+  }
+  function levelAt(x,y){
+    const c=Math.floor((x-margin)/cell),r=Math.floor((y-margin)/cell);
+    if(r<0||c<0||r>=rows||c>=cols)return 0;
+    return level[r][c]||0;
+  }
+  function scaleAt(x,y){return cell/Math.pow(2,levelAt(x,y));}
+
+  function evToLogical(e){
+    const r=cv.getBoundingClientRect();
+    const sx=(cv.width/dpr)/r.width,sy=(cv.height/dpr)/r.height;
+    const cx=(e.touches?e.touches[0].clientX:e.clientX),cy=(e.touches?e.touches[0].clientY:e.clientY);
+    return {x:(cx-r.left)*sx,y:(cy-r.top)*sy};
+  }
+  function cellAt(px,py){const c=Math.floor((px-margin)/cell),r=Math.floor((py-margin)/cell);if(c<0||r<0||c>=cols||r>=rows)return null;return{c,r};}
+
+  function paintCell(c,r,val){
+    const b=brushSize-1;
+    for(let dr=-b;dr<=b;dr++)for(let dc=-b;dc<=b;dc++){
+      const rr=r+dr,cc=c+dc;
+      if(b>0&&Math.hypot(dr,dc)>b+0.4)continue;
+      if(rr>=0&&cc>=0&&rr<rows&&cc<cols)grid[rr][cc]=val;
+    }
+  }
+
+  function buildAttractors(){
+    computeAuto();
+    const rng=mulberry(seed);
+    const pts=[];const CAP=12000;
+    let total=0;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const d=grid[r][c];if(d<=0)continue;const n=Math.pow(2,level[r][c]||0);total+=n*n*params.detail*(0.5+d*0.3);}
+    const sc0=total>CAP?CAP/total:1;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      const d=grid[r][c];if(d<=0)continue;
+      const L=level[r][c]||0,n=Math.pow(2,L),sub=cell/n,w=0.5+d*0.3;
+      for(let sy=0;sy<n;sy++)for(let sx=0;sx<n;sx++){
+        let k=params.detail*w*sc0,cnt=Math.floor(k);if(rng()<(k-cnt))cnt++;
+        const ox=margin+c*cell+sx*sub,oy=margin+r*cell+sy*sub;
+        for(let i=0;i<cnt;i++)pts.push({x:ox+rng()*sub,y:oy+rng()*sub,dead:false,s:sub});
+      }
+    }
+    return pts;
+  }
+
+  function grow(){
+    computeAuto();
+    const rng=mulberry(seed^0x9e3779b9);
+    const atr=buildAttractors();attractors=atr;
+    if(!roots.length){toast("Place at least one root (Tool ▸ Root, or a Roots edge).");return null;}
+    if(!atr.length){toast("Paint some density first.");return null;}
+    for(const a of atr){const reach=params.reach*a.s;a.attr2=reach*reach;a.searchR=Math.ceil(reach/cell)+1;const kd=params.kill*a.s;a.kill2=kd*kd;a.killR=Math.ceil(kd/cell)+1;}
+    const nodes=[];for(const rt of roots)nodes.push({x:rt.x,y:rt.y,parent:-1,cc:0});
+    const maxDeg=Math.max(2,params.maxdeg||3);
+    const bucket=cell,t0=performance.now();let alive=atr.length;
+    for(let iter=0;iter<3000&&alive>0;iter++){
+      const m=new Map();
+      for(let i=0;i<nodes.length;i++){const k=Math.floor(nodes[i].x/bucket)+","+Math.floor(nodes[i].y/bucket);let arr=m.get(k);if(!arr){arr=[];m.set(k,arr);}arr.push(i);}
+      const infl=new Array(nodes.length);
+      for(const a of atr){
+        if(a.dead)continue;
+        const bx=Math.floor(a.x/bucket),by=Math.floor(a.y/bucket),R=a.searchR;
+        let best=-1,bd=a.attr2;
+        for(let dx=-R;dx<=R;dx++)for(let dy=-R;dy<=R;dy++){
+          const arr=m.get((bx+dx)+","+(by+dy));if(!arr)continue;
+          for(const i of arr){if(nodes[i].cc>=maxDeg)continue;const ddx=a.x-nodes[i].x,ddy=a.y-nodes[i].y,d=ddx*ddx+ddy*ddy;if(d<bd){bd=d;best=i;}}
+        }
+        if(best>=0){let o=infl[best];if(!o){o={dx:0,dy:0,n:0};infl[best]=o;}const ddx=a.x-nodes[best].x,ddy=a.y-nodes[best].y,L=Math.hypot(ddx,ddy)||1;o.dx+=ddx/L;o.dy+=ddy/L;o.n++;}
+      }
+      let grew=false;const base=nodes.length;const newIdx=[];
+      for(let i=0;i<base;i++){
+        const o=infl[i];if(!o||o.n===0)continue;
+        let dx=o.dx/o.n,dy=o.dy/o.n,L=Math.hypot(dx,dy);
+        if(L<1e-4){dx=rng()-0.5;dy=rng()-0.5;L=Math.hypot(dx,dy);}
+        dx/=L;dy/=L;const j=0.18;dx+=(rng()-0.5)*j;dy+=(rng()-0.5)*j;const LL=Math.hypot(dx,dy)||1;dx/=LL;dy/=LL;
+        const seg=params.seg*scaleAt(nodes[i].x,nodes[i].y);
+        nodes[i].cc++;nodes.push({x:nodes[i].x+dx*seg,y:nodes[i].y+dy*seg,parent:i,cc:0});newIdx.push(nodes.length-1);grew=true;
+      }
+      if(!grew)break;
+      const mn=new Map();
+      for(const i of newIdx){const k=Math.floor(nodes[i].x/bucket)+","+Math.floor(nodes[i].y/bucket);let arr=mn.get(k);if(!arr){arr=[];mn.set(k,arr);}arr.push(i);}
+      for(const a of atr){
+        if(a.dead)continue;
+        const bx=Math.floor(a.x/bucket),by=Math.floor(a.y/bucket),R=a.killR;let killed=false;
+        for(let dx=-R;dx<=R&&!killed;dx++)for(let dy=-R;dy<=R&&!killed;dy++){
+          const arr=mn.get((bx+dx)+","+(by+dy));if(!arr)continue;
+          for(const i of arr){const ddx=a.x-nodes[i].x,ddy=a.y-nodes[i].y;if(ddx*ddx+ddy*ddy<a.kill2){a.dead=true;alive--;killed=true;break;}}
+        }
+      }
+      if(nodes.length>40000)break;
+      if(performance.now()-t0>5000)break;
+    }
+    // ---- trim orphan trees: drop whole trees smaller than threshold ----
+    let work=nodes;
+    if(params.trim>0){
+      const rootOf=new Array(work.length);
+      for(let i=0;i<work.length;i++) rootOf[i]= work[i].parent<0 ? i : rootOf[work[i].parent];
+      const cnt={};
+      for(let i=0;i<work.length;i++) cnt[rootOf[i]]=(cnt[rootOf[i]]||0)+1;
+      let dropped=false;
+      const keep=new Array(work.length);
+      for(let i=0;i<work.length;i++){keep[i]=cnt[rootOf[i]]>=params.trim; if(!keep[i])dropped=true;}
+      if(dropped){
+        const remap=new Array(work.length).fill(-1);const out=[];
+        for(let i=0;i<work.length;i++)if(keep[i]){remap[i]=out.length;out.push({x:work[i].x,y:work[i].y,parent:work[i].parent});}
+        for(const nd of out) nd.parent = nd.parent<0?-1:remap[nd.parent];
+        work=out;
+      }
+    }
+    const N=work.length;
+    const children=Array.from({length:N},()=>[]);
+    for(let i=0;i<N;i++)if(work[i].parent>=0)children[work[i].parent].push(i);
+    const weight=new Array(N).fill(0);
+    for(let i=0;i<N;i++)if(children[i].length===0)weight[i]=1;
+    for(let i=N-1;i>=1;i--){const p=work[i].parent;if(p>=0)weight[p]+=weight[i];}
+    let maxW=1;for(let i=0;i<N;i++)maxW=Math.max(maxW,weight[i]);
+    const chains=[];const chainOf=new Array(N).fill(-1);const stack=[];
+    for(let i=0;i<N;i++)if(work[i].parent===-1)stack.push(i);
+    while(stack.length){let s=stack.pop();const chain=[s];let cur=s;while(children[cur].length===1){cur=children[cur][0];chain.push(cur);}const id=chains.length;chains.push(chain);for(const ni of chain)chainOf[ni]=id;for(const c of children[cur])stack.push(c);}
+    // ---- anastomosis: link tips to a nearby neighbouring branch (capillary loops) ----
+    const extra=[];
+    if(params.link>0){
+      const bucket=cell,m=new Map();
+      for(let i=0;i<N;i++){const k=Math.floor(work[i].x/bucket)+","+Math.floor(work[i].y/bucket);let arr=m.get(k);if(!arr){arr=[];m.set(k,arr);}arr.push(i);}
+      const seen=new Set(),used=new Set();
+      for(let i=0;i<N;i++){
+        if(children[i].length!==0||used.has(i))continue;            // open tips only
+        const sc=scaleAt(work[i].x,work[i].y),reach=params.link*sc,minL=0.4*sc;
+        const bx=Math.floor(work[i].x/bucket),by=Math.floor(work[i].y/bucket),R=Math.ceil(reach/bucket)+1;
+        let best=-1,bd=reach*reach;
+        for(let dx=-R;dx<=R;dx++)for(let dy=-R;dy<=R;dy++){const arr=m.get((bx+dx)+","+(by+dy));if(!arr)continue;
+          for(const jj of arr){
+            if(jj===i||jj===work[i].parent||chainOf[jj]===chainOf[i]||used.has(jj))continue;
+            if(children[jj].length===1&&work[jj].parent>=0)continue; // only weld onto tips / junctions / roots
+            const ddx=work[i].x-work[jj].x,ddy=work[i].y-work[jj].y,d=ddx*ddx+ddy*ddy;
+            if(d>=minL*minL&&d<bd){bd=d;best=jj;}
+          }
+        }
+        if(best>=0){const a=Math.min(i,best),b=Math.max(i,best),key=a+"_"+b;if(!seen.has(key)){seen.add(key);used.add(i);used.add(best);extra.push([i,best]);}}
+      }
+    }
+    return {nodes:work,children,weight,maxW,chains,extra};
+  }
+
+  function chaikin(pts,iter){
+    for(let k=0;k<iter;k++){
+      if(pts.length<3)break;
+      const out=[pts[0]];
+      for(let i=0;i<pts.length-1;i++){const p=pts[i],q=pts[i+1];out.push({x:p.x*0.75+q.x*0.25,y:p.y*0.75+q.y*0.25});out.push({x:p.x*0.25+q.x*0.75,y:p.y*0.25+q.y*0.75});}
+      out.push(pts[pts.length-1]);pts=out;
+    }
+    return pts;
+  }
+  function widthFor(w,maxW){const t=Math.sqrt(w/maxW);return Math.max(0.55,0.55+t*(params.trunk-0.55));}
+
+  function draw(){
+    computeAuto();
+    const {W,H}=logicalSize();
+    ctx.clearRect(0,0,W,H);
+    if(view.density){
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const d=grid[r][c];if(d<=0)continue;ctx.fillStyle=DCOL[d];ctx.globalAlpha=0.82;ctx.fillRect(margin+c*cell,margin+r*cell,cell,cell);}
+      ctx.globalAlpha=1;
+    }
+    if(view.grid){
+      ctx.strokeStyle="rgba(33,28,23,0.14)";ctx.lineWidth=1;ctx.beginPath();
+      for(let c=0;c<=cols;c++){const x=margin+c*cell+0.5;ctx.moveTo(x,margin);ctx.lineTo(x,margin+rows*cell);}
+      for(let r=0;r<=rows;r++){const y=margin+r*cell+0.5;ctx.moveTo(margin,y);ctx.lineTo(margin+cols*cell,y);}
+      ctx.stroke();
+      ctx.strokeStyle="rgba(140,47,42,0.30)";ctx.lineWidth=0.7;ctx.beginPath();
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+        const L=level[r][c]||0;if(grid[r][c]<=0||!L)continue;
+        const n=Math.pow(2,L),sub=cell/n,x0=margin+c*cell,y0=margin+r*cell;
+        for(let k=1;k<n;k++){const x=x0+k*sub+0.5;ctx.moveTo(x,y0);ctx.lineTo(x,y0+cell);const y=y0+k*sub+0.5;ctx.moveTo(x0,y);ctx.lineTo(x0+cell,y);}
+      }
+      ctx.stroke();
+    }
+    ctx.strokeStyle="rgba(33,28,23,0.42)";ctx.lineWidth=1.4;ctx.beginPath();
+    const inb=(r,c)=>r>=0&&c>=0&&r<rows&&c<cols&&grid[r][c]>0;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      if(grid[r][c]<=0)continue;const x=margin+c*cell,y=margin+r*cell;
+      if(!inb(r-1,c)){ctx.moveTo(x,y);ctx.lineTo(x+cell,y);}
+      if(!inb(r+1,c)){ctx.moveTo(x,y+cell);ctx.lineTo(x+cell,y+cell);}
+      if(!inb(r,c-1)){ctx.moveTo(x,y);ctx.lineTo(x,y+cell);}
+      if(!inb(r,c+1)){ctx.moveTo(x+cell,y);ctx.lineTo(x+cell,y+cell);}
+    }
+    ctx.stroke();
+    if(view.attract&&attractors.length){ctx.fillStyle="rgba(140,47,42,0.5)";for(const a of attractors){ctx.beginPath();ctx.arc(a.x,a.y,1.3,0,7);ctx.fill();}}
+    if(tree){
+      const col=view.ink?css('--accent'):"#211c17";ctx.strokeStyle=col;ctx.lineCap="round";ctx.lineJoin="round";
+      for(const chain of tree.chains){
+        const par=tree.nodes[chain[0]].parent;
+        let pts=chain.map(i=>({x:tree.nodes[i].x,y:tree.nodes[i].y}));
+        if(par>=0)pts.unshift({x:tree.nodes[par].x,y:tree.nodes[par].y});
+        if(curved&&pts.length>2)pts=chaikin(pts,2);
+        ctx.lineWidth=widthFor(tree.weight[chain[0]],tree.maxW);
+        ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+      }
+      if(tree.extra&&tree.extra.length){
+        ctx.lineWidth=Math.max(0.6,params.trunk*0.13);ctx.beginPath();
+        for(const e of tree.extra){ctx.moveTo(tree.nodes[e[0]].x,tree.nodes[e[0]].y);ctx.lineTo(tree.nodes[e[1]].x,tree.nodes[e[1]].y);}
+        ctx.stroke();
+      }
+    }
+    if(view.roots){for(const rt of roots){ctx.fillStyle="#fff";ctx.strokeStyle="#8c2f2a";ctx.lineWidth=2;ctx.beginPath();ctx.arc(rt.x,rt.y,4.2,0,7);ctx.fill();ctx.stroke();}}
+    if(dragRect){
+      const {c0,r0,c1,r1}=dragRect;const x=margin+Math.min(c0,c1)*cell,y=margin+Math.min(r0,r1)*cell;
+      const w=(Math.abs(c1-c0)+1)*cell,h=(Math.abs(r1-r0)+1)*cell;
+      ctx.fillStyle=paintD>0?DCOL[paintD]:"rgba(33,28,23,.08)";ctx.globalAlpha=0.45;ctx.fillRect(x,y,w,h);ctx.globalAlpha=1;
+      ctx.strokeStyle="#8c2f2a";ctx.lineWidth=1.4;ctx.setLineDash([5,4]);ctx.strokeRect(x+0.5,y+0.5,w,h);ctx.setLineDash([]);
+    }
+    updateStat();
+  }
+
+  function updateStat(){
+    let cells=0,fine=0;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(grid[r][c]>0){cells++;if((level[r][c]||0)>0)fine++;}}
+    const g=tree?`<b>${tree.nodes.length-roots.length} segments · ${tree.chains.length} limbs · ${tree.extra?tree.extra.length:0} loops</b>`:`<b>not generated</b>`;
+    $("#stat").innerHTML=`${cells} cells · ${fine} subdivided · ${roots.length} root${roots.length===1?"":"s"}<br>${g}`;
+  }
+
+  function seedEdge(edge){
+    roots=[];const interior=[];
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>0)interior.push({r,c});
+    if(!interior.length){toast("Paint the panel bounds first.");return;}
+    const cx=c=>margin+(c+0.5)*cell,cy=r=>margin+(r+0.5)*cell;
+    if(edge==="center"){let sr=0,sc=0;interior.forEach(p=>{sr+=p.r;sc+=p.c;});roots.push({x:cx(sc/interior.length),y:cy(sr/interior.length)});}
+    else if(edge==="bottom"||edge==="top"){
+      const byCol={};interior.forEach(p=>{(byCol[p.c]=byCol[p.c]||[]).push(p.r);});
+      Object.keys(byCol).forEach((c,i)=>{if(i%2!==0&&cols>20)return;const rs=byCol[c];const r=edge==="bottom"?Math.max(...rs):Math.min(...rs);const yy=edge==="bottom"?margin+(r+1)*cell:margin+r*cell;roots.push({x:cx(+c),y:yy});});
+    }else{
+      const byRow={};interior.forEach(p=>{(byRow[p.r]=byRow[p.r]||[]).push(p.c);});
+      Object.keys(byRow).forEach((r,i)=>{if(i%2!==0&&rows>20)return;const cs=byRow[r];const c=edge==="left"?Math.min(...cs):Math.max(...cs);const xx=edge==="left"?margin+c*cell:margin+(c+1)*cell;roots.push({x:xx,y:cy(+r)});});
+    }
+    tree=null;draw();
+  }
+
+  function buildSVG(){
+    const {W,H}=logicalSize();const inkCol=view.ink?"#8c2f2a":"#211c17";const f=n=>Math.round(n*100)/100;
+    let s=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\n`;
+    if($("#exDens").checked){s+=`<g id="density">\n`;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const d=grid[r][c];if(d<=0)continue;s+=`<rect x="${f(margin+c*cell)}" y="${f(margin+r*cell)}" width="${f(cell)}" height="${f(cell)}" fill="${DCOL[d]}" fill-opacity="0.82"/>\n`;}s+=`</g>\n`;}
+    if($("#exGrid").checked){
+      s+=`<g id="grid" stroke="#211c17" stroke-opacity="0.14" stroke-width="1">\n`;
+      for(let c=0;c<=cols;c++){const x=f(margin+c*cell);s+=`<line x1="${x}" y1="${f(margin)}" x2="${x}" y2="${f(margin+rows*cell)}"/>\n`;}
+      for(let r=0;r<=rows;r++){const y=f(margin+r*cell);s+=`<line x1="${f(margin)}" y1="${y}" x2="${f(margin+cols*cell)}" y2="${y}"/>\n`;}
+      s+=`</g>\n<g id="subdivisions" stroke="#8c2f2a" stroke-opacity="0.30" stroke-width="0.7">\n`;
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const L=level[r][c]||0;if(grid[r][c]<=0||!L)continue;const n=Math.pow(2,L),sub=cell/n,x0=margin+c*cell,y0=margin+r*cell;for(let k=1;k<n;k++){const x=f(x0+k*sub);s+=`<line x1="${x}" y1="${f(y0)}" x2="${x}" y2="${f(y0+cell)}"/>\n`;const y=f(y0+k*sub);s+=`<line x1="${f(x0)}" y1="${y}" x2="${f(x0+cell)}" y2="${y}"/>\n`;}}
+      s+=`</g>\n`;
+    }
+    if($("#exBound").checked){
+      const inb=(r,c)=>r>=0&&c>=0&&r<rows&&c<cols&&grid[r][c]>0;let d="";
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(grid[r][c]<=0)continue;const x=margin+c*cell,y=margin+r*cell;
+        if(!inb(r-1,c))d+=`M${f(x)} ${f(y)}L${f(x+cell)} ${f(y)}`;if(!inb(r+1,c))d+=`M${f(x)} ${f(y+cell)}L${f(x+cell)} ${f(y+cell)}`;
+        if(!inb(r,c-1))d+=`M${f(x)} ${f(y)}L${f(x)} ${f(y+cell)}`;if(!inb(r,c+1))d+=`M${f(x+cell)} ${f(y)}L${f(x+cell)} ${f(y+cell)}`;}
+      s+=`<path id="boundary" d="${d}" fill="none" stroke="#211c17" stroke-opacity="0.5" stroke-width="1.4"/>\n`;
+    }
+    if($("#exBranch").checked&&tree){
+      s+=`<g id="branches" fill="none" stroke="${inkCol}" stroke-linecap="round" stroke-linejoin="round">\n`;
+      for(const chain of tree.chains){const par=tree.nodes[chain[0]].parent;let pts=chain.map(i=>({x:tree.nodes[i].x,y:tree.nodes[i].y}));if(par>=0)pts.unshift({x:tree.nodes[par].x,y:tree.nodes[par].y});if(curved&&pts.length>2)pts=chaikin(pts,2);const w=f(widthFor(tree.weight[chain[0]],tree.maxW));let d=`M${f(pts[0].x)} ${f(pts[0].y)}`;for(let i=1;i<pts.length;i++)d+=`L${f(pts[i].x)} ${f(pts[i].y)}`;s+=`<path d="${d}" stroke-width="${w}"/>\n`;}
+      s+=`</g>\n`;
+      if(tree.extra&&tree.extra.length){
+        s+=`<g id="anastomoses" fill="none" stroke="${inkCol}" stroke-linecap="round" stroke-width="${f(Math.max(0.6,params.trunk*0.13))}">\n`;
+        for(const e of tree.extra){s+=`<line x1="${f(tree.nodes[e[0]].x)}" y1="${f(tree.nodes[e[0]].y)}" x2="${f(tree.nodes[e[1]].x)}" y2="${f(tree.nodes[e[1]].y)}"/>\n`;}
+        s+=`</g>\n`;
+      }
+    }
+    return s+`</svg>\n`;
+  }
+  // ===== MultiPipe-ready network: weld endpoints, node every crossing, drop fragments, chain into polylines =====
+  function cleanNetwork(rawEdges, tol, minLen){
+    const q=tol, key=p=>Math.round(p.x/q)+"_"+Math.round(p.y/q);
+    const nodeMap=new Map(),nodes=[];
+    function nid(p){const k=key(p);let id=nodeMap.get(k);if(id===undefined){id=nodes.length;nodes.push({x:p.x,y:p.y});nodeMap.set(k,id);}return id;}
+    let edges=[];const eseen=new Set();
+    for(const e of rawEdges){const a=nid(e[0]),b=nid(e[1]);if(a===b)continue;const k=a<b?a+"_"+b:b+"_"+a;if(eseen.has(k))continue;eseen.add(k);edges.push([a,b]);}
+    // --- planarize: collect interior split points per edge ---
+    const bucket=Math.max(tol*4,8),hash=new Map();
+    function bk(x,y){return Math.floor(x/bucket)+","+Math.floor(y/bucket);}
+    for(let i=0;i<edges.length;i++){
+      const A=nodes[edges[i][0]],B=nodes[edges[i][1]];
+      const x0=Math.min(A.x,B.x),x1=Math.max(A.x,B.x),y0=Math.min(A.y,B.y),y1=Math.max(A.y,B.y);
+      for(let gx=Math.floor(x0/bucket);gx<=Math.floor(x1/bucket);gx++)for(let gy=Math.floor(y0/bucket);gy<=Math.floor(y1/bucket);gy++){const k=gx+","+gy;let arr=hash.get(k);if(!arr){arr=[];hash.set(k,arr);}arr.push(i);}
+    }
+    const splits=new Map();
+    function addSplit(ei,p){let a=splits.get(ei);if(!a){a=[];splits.set(ei,a);}a.push(p);}
+    function segInt(a,b,c,d){
+      const rx=b.x-a.x,ry=b.y-a.y,sx=d.x-c.x,sy=d.y-c.y,rxs=rx*sy-ry*sx;
+      if(Math.abs(rxs)<1e-9)return null;
+      const qpx=c.x-a.x,qpy=c.y-a.y,t=(qpx*sy-qpy*sx)/rxs,u=(qpx*ry-qpy*rx)/rxs;
+      if(t<-1e-6||t>1+1e-6||u<-1e-6||u>1+1e-6)return null;
+      return {x:a.x+t*rx,y:a.y+t*ry};
+    }
+    const tested=new Set();
+    for(const arr of hash.values()){
+      for(let a=0;a<arr.length;a++)for(let b=a+1;b<arr.length;b++){
+        const i=arr[a],j=arr[b];if(i===j)continue;const pk=i<j?i*edges.length+j:j*edges.length+i;if(tested.has(pk))continue;tested.add(pk);
+        const e1=edges[i],e2=edges[j];if(e1[0]===e2[0]||e1[0]===e2[1]||e1[1]===e2[0]||e1[1]===e2[1])continue; // share a node already
+        const A=nodes[e1[0]],B=nodes[e1[1]],C=nodes[e2[0]],D=nodes[e2[1]];
+        const p=segInt(A,B,C,D);if(!p)continue;
+        const d2=(u,v)=>{const dx=p.x-u.x,dy=p.y-u.y;return dx*dx+dy*dy;};
+        if(d2(A)>tol*tol&&d2(B)>tol*tol)addSplit(i,p);
+        if(d2(C)>tol*tol&&d2(D)>tol*tol)addSplit(j,p);
+      }
+    }
+    // --- rebuild edges through split points ---
+    const final=[];const fseen=new Set();
+    function pushE(a,b){if(a===b)return;const k=a<b?a+"_"+b:b+"_"+a;if(fseen.has(k))return;fseen.add(k);final.push([a,b]);}
+    for(let i=0;i<edges.length;i++){
+      const A=nodes[edges[i][0]],B=nodes[edges[i][1]];
+      const sp=splits.get(i);
+      if(!sp){pushE(edges[i][0],edges[i][1]);continue;}
+      const dx=B.x-A.x,dy=B.y-A.y,L2=dx*dx+dy*dy||1;
+      const pts=[{id:edges[i][0],t:0},{id:edges[i][1],t:1}];
+      for(const p of sp){const t=((p.x-A.x)*dx+(p.y-A.y)*dy)/L2;pts.push({id:nid(p),t});}
+      pts.sort((m,n)=>m.t-n.t);
+      for(let k=0;k<pts.length-1;k++)pushE(pts[k].id,pts[k+1].id);
+    }
+    // --- connected components (union-find) and fragment culling ---
+    const par=nodes.map((_,i)=>i);
+    function find(x){while(par[x]!==x){par[x]=par[par[x]];x=par[x];}return x;}
+    function uni(a,b){par[find(a)]=find(b);}
+    for(const e of final)uni(e[0],e[1]);
+    const compLen={};
+    for(const e of final){const r=find(e[0]);const A=nodes[e[0]],B=nodes[e[1]];compLen[r]=(compLen[r]||0)+Math.hypot(A.x-B.x,A.y-B.y);}
+    const keep=final.filter(e=>compLen[find(e[0])]>=minLen);
+    // --- chain degree-2 runs into polylines between anchors (deg!=2) ---
+    const adj=new Map();
+    for(let ei=0;ei<keep.length;ei++){for(const v of [keep[ei][0],keep[ei][1]]){let a=adj.get(v);if(!a){a=[];adj.set(v,a);}a.push(ei);}}
+    const deg=v=>(adj.get(v)||[]).length;
+    const usedE=new Array(keep.length).fill(false);
+    const polylines=[];
+    function walk(start,ei){
+      const out=[start];let prev=start,e=ei;
+      while(true){usedE[e]=true;const [a,b]=keep[e];const nxt=a===prev?b:a;out.push(nxt);if(deg(nxt)!==2)break;const cand=adj.get(nxt).filter(x=>!usedE[x]);if(!cand.length)break;e=cand[0];prev=nxt;}
+      return out;
+    }
+    for(const [v,es] of adj){if(deg(v)===2)continue;for(const ei of es){if(usedE[ei])continue;polylines.push(walk(v,ei));}}
+    // leftover pure cycles (all deg 2)
+    for(let ei=0;ei<keep.length;ei++){if(usedE[ei])continue;const start=keep[ei][0];polylines.push(walk(start,ei));}
+    const ptsOf=poly=>poly.map(id=>nodes[id]);
+    let junctions=0,naked=0;for(const [v] of adj){const d=deg(v);if(d>=3)junctions++;else if(d===1)naked++;}
+    const comps=new Set();for(const e of keep)comps.add(find(e[0]));
+    return {polylines:polylines.map(ptsOf),stats:{nodes:adj.size,segments:keep.length,polylines:polylines.length,junctions,naked,components:comps.size,dropped:final.length-keep.length}};
+  }
+
+  function gatherEdges(includeLoops){
+    const e=[];if(!tree)return e;
+    for(let i=0;i<tree.nodes.length;i++){const p=tree.nodes[i].parent;if(p>=0)e.push([{x:tree.nodes[p].x,y:tree.nodes[p].y},{x:tree.nodes[i].x,y:tree.nodes[i].y}]);}
+    if(includeLoops&&tree.extra)for(const ex of tree.extra)e.push([{x:tree.nodes[ex[0]].x,y:tree.nodes[ex[0]].y},{x:tree.nodes[ex[1]].x,y:tree.nodes[ex[1]].y}]);
+    return e;
+  }
+
+  function buildNetworkSVG(){
+    const {W,H}=logicalSize();const f=n=>Math.round(n*100)/100;
+    const tol=Math.max(0.4,cell*0.05),minLen=cell*1.4;
+    const net=cleanNetwork(gatherEdges($("#netLoops").checked),tol,minLen);
+    let s=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\n`;
+    s+=`<g id="network" fill="none" stroke="#211c17" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">\n`;
+    for(const poly of net.polylines){if(poly.length<2)continue;let d=`M${f(poly[0].x)} ${f(poly[0].y)}`;for(let i=1;i<poly.length;i++)d+=`L${f(poly[i].x)} ${f(poly[i].y)}`;s+=`<path d="${d}"/>\n`;}
+    s+=`</g>\n</svg>\n`;
+    return {svg:s,stats:net.stats};
+  }
+
+  function download(data,name,type){const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},100);}
+  function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600);}
+
+  function onDown(e){
+    e.preventDefault();const p=evToLogical(e);
+    if(tool==="root"){const idx=roots.findIndex(r=>Math.hypot(r.x-p.x,r.y-p.y)<8);if(idx>=0)roots.splice(idx,1);else roots.push({x:p.x,y:p.y});tree=null;draw();return;}
+    const cc=cellAt(p.x,p.y);if(!cc)return;
+    if(tool==="subdiv"){if(grid[cc.r][cc.c]<=0)return;if(subdiv.auto){subdiv.auto=false;$("#autoSub").checked=false;}level[cc.r][cc.c]=(level[cc.r][cc.c]+1)%(subdiv.max+1);tree=null;draw();return;}
+    if(tool==="rect"){dragRect={c0:cc.c,r0:cc.r,c1:cc.c,r1:cc.r};draw();return;}
+    painting=true;paintCell(cc.c,cc.r,paintD);tree=null;draw();
+  }
+  function onMove(e){
+    const p=evToLogical(e);
+    if(tool==="rect"&&dragRect){const cc=cellAt(p.x,p.y);if(cc){dragRect.c1=cc.c;dragRect.r1=cc.r;draw();}return;}
+    if(!painting)return;const cc=cellAt(p.x,p.y);if(!cc)return;paintCell(cc.c,cc.r,paintD);draw();
+  }
+  function onUp(){
+    if(tool==="rect"&&dragRect){const {c0,r0,c1,r1}=dragRect;for(let r=Math.min(r0,r1);r<=Math.max(r0,r1);r++)for(let c=Math.min(c0,c1);c<=Math.max(c0,c1);c++)grid[r][c]=paintD;dragRect=null;tree=null;draw();}
+    painting=false;
+  }
+  cv.addEventListener("mousedown",onDown);window.addEventListener("mousemove",onMove);window.addEventListener("mouseup",onUp);
+  cv.addEventListener("touchstart",onDown,{passive:false});cv.addEventListener("touchmove",e=>{e.preventDefault();onMove(e);},{passive:false});cv.addEventListener("touchend",onUp);
+
+  function bindRange(id,valId,fmt,onset){const el=$(id);el.addEventListener("input",()=>{const v=parseFloat(el.value);$(valId).textContent=fmt(v);onset(v);});}
+  bindRange("#cols","#colsVal",v=>v,v=>newGrid(v,rows,true));
+  bindRange("#rows","#rowsVal",v=>v,v=>newGrid(cols,v,true));
+  bindRange("#detail","#detVal",v=>v.toFixed(1),v=>{params.detail=v;});
+  bindRange("#seg","#segVal",v=>v.toFixed(2)+"×",v=>{params.seg=v;});
+  bindRange("#reach","#reachVal",v=>v.toFixed(1)+"×",v=>{params.reach=v;});
+  bindRange("#kill","#killVal",v=>v.toFixed(2)+"×",v=>{params.kill=v;});
+  bindRange("#deg","#degVal",v=>v,v=>{params.maxdeg=v;});
+  bindRange("#link","#linkVal",v=>v===0?"off":v.toFixed(1)+"×",v=>{params.link=v;});
+  bindRange("#trim","#trimVal",v=>v===0?"off":v,v=>{params.trim=v;});
+  bindRange("#trunk","#trunkVal",v=>v,v=>{params.trunk=v;if(tree)draw();});
+  bindRange("#maxSub","#maxSubVal",v=>v+" → "+(v===1?"½":v===2?"¼":"⅛")+" size",v=>{subdiv.max=v;draw();});
+  $("#brushSize").addEventListener("input",e=>{brushSize=+e.target.value;$("#brushVal").textContent=brushSize;});
+  $("#autoSub").addEventListener("change",e=>{subdiv.auto=e.target.checked;tree=null;draw();});
+
+  function setD(d){paintD=d;document.querySelectorAll("#swatches .sw").forEach(s=>s.classList.toggle("on",+s.dataset.d===d));document.querySelectorAll("#miniSw .m").forEach(s=>s.classList.toggle("on",+s.dataset.d===d));}
+  document.querySelectorAll("#swatches .sw").forEach(s=>s.addEventListener("click",()=>setD(+s.dataset.d)));
+  const mini=$("#miniSw");["0","1","2","3","4","5"].forEach(d=>{const m=document.createElement("div");m.className="m sw"+d;m.dataset.d=d;m.title="Density "+d;mini.appendChild(m);});
+  document.querySelectorAll("#miniSw .m").forEach(s=>s.addEventListener("click",()=>setD(+s.dataset.d)));
+  setD(3);
+
+  document.querySelectorAll(".tool").forEach(b=>b.addEventListener("click",()=>{tool=b.dataset.tool;document.querySelectorAll(".tool").forEach(x=>x.classList.toggle("on",x===b));cv.style.cursor=(tool==="root"||tool==="subdiv")?"pointer":"crosshair";}));
+
+  $("#vGrid").addEventListener("change",e=>{view.grid=e.target.checked;draw();});
+  $("#vDensity").addEventListener("change",e=>{view.density=e.target.checked;draw();});
+  $("#vAttract").addEventListener("change",e=>{view.attract=e.target.checked;if(e.target.checked&&!attractors.length)attractors=buildAttractors();draw();});
+  $("#vRoots").addEventListener("change",e=>{view.roots=e.target.checked;draw();});
+  $("#vInk").addEventListener("change",e=>{view.ink=e.target.checked;draw();});
+
+  $("#fillAll").addEventListener("click",()=>{for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)grid[r][c]=1;tree=null;draw();});
+  $("#clearGrid").addEventListener("click",()=>{for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){grid[r][c]=0;level[r][c]=0;}roots=[];tree=null;attractors=[];draw();});
+  $("#clearRoots").addEventListener("click",()=>{roots=[];tree=null;draw();});
+  document.querySelectorAll("[data-edge]").forEach(b=>b.addEventListener("click",()=>seedEdge(b.dataset.edge)));
+  $("#reseed").addEventListener("click",()=>{seed=Math.floor(Math.random()*1e9);if(tree)doGenerate();else{attractors=buildAttractors();draw();}});
+  $("#curveToggle").addEventListener("click",e=>{curved=!curved;e.target.textContent="Curved: "+(curved?"ON":"OFF");if(tree)draw();});
+
+  function doGenerate(){const t0=performance.now();const res=grow();if(res){tree=res;draw();toast(`Grown · ${tree.nodes.length-roots.length} segments in ${Math.round(performance.now()-t0)}ms`);}}
+  $("#generate").addEventListener("click",doGenerate);
+  window.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")doGenerate();});
+
+  $("#exportSvg").addEventListener("click",()=>{if(!tree&&$("#exBranch").checked){toast("Generate branches first, or untick the Branches layer.");return;}download(buildSVG(),"capillary-facade.svg","image/svg+xml");toast("SVG exported.");});
+  $("#exportNet").addEventListener("click",()=>{if(!tree){toast("Generate branches first.");return;}const r=buildNetworkSVG();download(r.svg,"capillary-network.svg","image/svg+xml");const st=r.stats;toast(`Network: ${st.polylines} curves · ${st.junctions} junctions · ${st.components} part${st.components===1?"":"s"} · ${st.dropped} stray bits removed`);});
+  $("#exportPng").addEventListener("click",()=>{cv.toBlob(b=>{download(b,"capillary-facade.png","image/png");toast("PNG exported.");});});
+
+  function init(){
+    newGrid(24,32,false);
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const t=r/rows,inset=Math.round(2+t*6);if(c>=inset&&c<cols-inset)grid[r][c]=(c>cols*0.34&&c<cols*0.66&&r>rows*0.3)?4:1;}
+    computeAuto();seedEdge("bottom");setD(3);draw();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

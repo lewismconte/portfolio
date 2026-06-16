@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vertical Structures — Parametric 3D Generator</title>
+<style>
+  :root{
+    --bg:#0e0f12; --panel:#16181d; --panel2:#1d2027; --line:#2b2f38;
+    --txt:#c7ccd6; --dim:#6b7280; --accent:#d98a3d; --accent2:#5b8fb0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:var(--bg);
+    font-family:"SF Mono", "JetBrains Mono",Menlo,Consolas,monospace;
+    color:var(--txt);overflow:hidden;
+  }
+  /* global canvas rule — would scale the gizmo if not overridden */
+  canvas{display:block;width:100%;height:100%;}
+  #app{display:flex;height:100vh;width:100vw;}
+  #view{position:relative;flex:1;min-width:0;background:#0e0f12;}
+  #gizmo{
+    position:absolute;top:10px;right:10px;
+    width:48px!important;height:48px!important;
+    background:rgba(14,15,18,0.55);border:1px solid var(--line);border-radius:3px;
+  }
+  #stats{
+    position:absolute;left:10px;bottom:10px;font-size:10px;color:var(--dim);
+    background:rgba(14,15,18,0.6);border:1px solid var(--line);
+    padding:4px 8px;border-radius:3px;line-height:1.5;letter-spacing:.04em;
+  }
+  #hint{
+    position:absolute;left:10px;top:10px;font-size:10px;color:var(--dim);
+    letter-spacing:.04em;
+  }
+  #panel{
+    width:250px;flex:0 0 250px;background:var(--panel);
+    border-left:1px solid var(--line);overflow-y:auto;
+    display:flex;flex-direction:column;
+  }
+  #panel::-webkit-scrollbar{width:8px;}
+  #panel::-webkit-scrollbar-thumb{background:#2b2f38;border-radius:4px;}
+  .hdr{
+    padding:14px 14px 10px;border-bottom:1px solid var(--line);
+  }
+  .hdr h1{font-size:12px;margin:0;letter-spacing:.13em;color:#fff;font-weight:600;}
+  .hdr p{font-size:9px;margin:5px 0 0;color:var(--dim);letter-spacing:.06em;}
+  .sect{padding:10px 14px 4px;}
+  .sect-t{
+    font-size:9px;letter-spacing:.18em;color:var(--accent);
+    margin:6px 0 9px;border-bottom:1px dotted var(--line);padding-bottom:5px;
+  }
+  .row{margin-bottom:11px;}
+  .row label{
+    display:flex;justify-content:space-between;font-size:10px;
+    color:var(--txt);margin-bottom:5px;letter-spacing:.03em;
+  }
+  .row label .val{color:var(--accent2);}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:3px;background:var(--line);
+    border-radius:2px;outline:none;margin:0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid var(--panel);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;background:var(--accent);
+    cursor:pointer;border:2px solid var(--panel);
+  }
+  .btnrow{display:flex;flex-wrap:wrap;gap:5px;}
+  button{
+    font-family:inherit;font-size:9.5px;letter-spacing:.05em;
+    background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+    padding:6px 7px;border-radius:3px;cursor:pointer;flex:1;min-width:0;
+    transition:background .12s,border-color .12s;
+  }
+  button:hover{background:#262a33;border-color:var(--accent);}
+  button.act{background:var(--accent);color:#0e0f12;border-color:var(--accent);}
+  .preset{flex:1 1 44%;}
+  .seedwrap{display:flex;gap:5px;align-items:center;}
+  .seedwrap input{
+    flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--accent2);
+    font-family:inherit;font-size:10px;padding:6px;border-radius:3px;min-width:0;
+  }
+  .toggle{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:10px;padding:7px 0;letter-spacing:.03em;
+  }
+  .sw{
+    width:34px;height:17px;background:var(--line);border-radius:9px;
+    position:relative;cursor:pointer;transition:background .15s;flex:0 0 34px;
+  }
+  .sw.on{background:var(--accent);}
+  .sw::after{
+    content:"";position:absolute;width:13px;height:13px;border-radius:50%;
+    background:#fff;top:2px;left:2px;transition:left .15s;
+  }
+  .sw.on::after{left:19px;}
+  .ftr{padding:6px 14px 16px;color:var(--dim);font-size:9px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <div id="hint">drag · orbit&nbsp;&nbsp;scroll · zoom</div>
+    <canvas id="gizmo" width="48" height="48"></canvas>
+    <div id="stats"></div>
+  </div>
+  <div id="panel">
+    <div class="hdr">
+      <h1>VERTICAL STRUCTURES</h1>
+      <p>PARAMETRIC TYPOLOGY GENERATOR</p>
+    </div>
+    <div class="sect">
+      <div class="sect-t">PRESETS</div>
+      <div class="btnrow" id="presets"></div>
+    </div>
+    <div class="sect">
+      <div class="sect-t">SEED</div>
+      <div class="seedwrap">
+        <input id="seed" type="text" value="1337">
+        <button id="rand" style="flex:0 0 64px">RANDOM</button>
+      </div>
+    </div>
+    <div id="controls"></div>
+    <div class="sect">
+      <div class="sect-t">CORE</div>
+      <div class="toggle"><span>CENTRAL CORE</span><div class="sw" id="core"></div></div>
+      <div class="toggle"><span>CLEAR CORE VOID</span><div class="sw" id="coreVoid"></div></div>
+    </div>
+    <div class="sect">
+      <div class="sect-t">RENDER</div>
+      <div class="toggle"><span>INK MODE</span><div class="sw" id="ink"></div></div>
+    </div>
+    <div class="sect">
+      <div class="sect-t">EXPORT</div>
+      <div class="btnrow">
+        <button id="exObj">.OBJ</button>
+        <button id="exSvg">.SVG</button>
+      </div>
+    </div>
+    <div class="ftr">
+      Procedural · seeded Mulberry32 · all geometry rebuilt on change.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================ RNG ============================ */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+var rng=mulberry32(1);
+function rnd(){return rng();}
+function rr(a,b){return a+(b-a)*rng();}
+function rsign(){return rng()<0.5?-1:1;}
+
+/* ========================= PARAMETERS ========================= */
+var params={
+  seed:1337,
+  typology:0,      // 0 grid 1 spaceframe 2 foam 3 capsule
+  floors:30,
+  bays:4,
+  floorHeight:0.95,
+  baseWidth:6.5,
+  baseDepth:6.5,
+  taper:0.6,
+  twist:40,
+  lean:0.0,
+  memberSize:0.13,
+  density:0.4,
+  bracing:0.45,
+  irregularity:0.25,
+  cellSize:1.0,
+  core:false,
+  coreVoid:false,
+  ink:false
+};
+
+var TYPO=["Grid Frame","Space Frame","Foam Cells","Capsule Stack"];
+
+var SCHEMA=[
+  {s:"STRUCTURE"},
+  {k:"typology",l:"Typology",min:0,max:3,step:1,fmt:function(v){return TYPO[v];}},
+  {k:"floors",l:"Floors",min:4,max:120,step:1},
+  {k:"bays",l:"Bays / Subdiv",min:2,max:8,step:1},
+  {s:"FORM"},
+  {k:"floorHeight",l:"Floor Height",min:0.3,max:1.6,step:0.05},
+  {k:"baseWidth",l:"Base Width",min:2,max:14,step:0.5},
+  {k:"baseDepth",l:"Base Depth",min:2,max:14,step:0.5},
+  {k:"taper",l:"Taper Ratio",min:0.15,max:1.3,step:0.05},
+  {k:"twist",l:"Twist",min:0,max:360,step:5,fmt:function(v){return v+"\u00b0";}},
+  {k:"lean",l:"Lean",min:0,max:1,step:0.02},
+  {s:"DETAIL"},
+  {k:"memberSize",l:"Member Size",min:0.03,max:0.45,step:0.01},
+  {k:"density",l:"Density",min:0,max:1,step:0.02},
+  {k:"bracing",l:"Bracing",min:0,max:1,step:0.02},
+  {k:"irregularity",l:"Irregularity",min:0,max:1,step:0.02},
+  {k:"cellSize",l:"Cell Size",min:0.35,max:1.6,step:0.05}
+];
+
+var PRESETS={
+  "DIAGRID":{typology:0,floors:38,bays:4,floorHeight:0.95,baseWidth:7,baseDepth:7,
+             taper:0.5,twist:25,lean:0,memberSize:0.12,density:0.25,bracing:0.7,irregularity:0.1},
+  "OCTET":  {typology:1,floors:26,bays:5,floorHeight:1.1,baseWidth:8,baseDepth:8,
+             taper:0.85,twist:0,lean:0,memberSize:0.08,density:0.5,bracing:0.6,irregularity:0.12},
+  "FOAM":   {typology:2,floors:22,bays:5,floorHeight:1.0,baseWidth:8.5,baseDepth:8.5,
+             taper:1.0,twist:0,lean:0,memberSize:0.07,density:0.72,bracing:0.5,irregularity:0.6},
+  "CAPSULE":{typology:3,floors:32,bays:3,floorHeight:1.0,baseWidth:5.5,baseDepth:5.5,
+             taper:0.92,twist:12,lean:0,memberSize:0.1,density:0.55,bracing:0.4,irregularity:0.55},
+  "TORQUE": {typology:0,floors:46,bays:4,floorHeight:0.9,baseWidth:6,baseDepth:6,
+             taper:0.42,twist:300,lean:0.18,memberSize:0.1,density:0.3,bracing:0.55,irregularity:0.15},
+  "SPIRE":  {typology:1,floors:40,bays:4,floorHeight:0.8,baseWidth:9,baseDepth:9,
+             taper:0.2,twist:60,lean:0,memberSize:0.07,density:0.45,bracing:0.7,irregularity:0.1}
+};
+
+/* ===================== GEOMETRY BUILDER ====================== */
+// palette per material group
+var PAL={
+  column:0x7c8aa0, beam:0x9a8f73, brace:0xc46b3e, node:0x3c424d,
+  chord:0xa0926d, web:0x6f9183, module:0xb3a487, core:0x565a63
+};
+
+var CUBE=[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,.5,-.5],[-.5,.5,-.5],
+          [-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]];
+var QFACE=[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]];
+var BEDGE=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+var UP=new THREE.Vector3(0,1,0);
+
+function Model(){
+  this.groups={}; this.edges=[]; this.struts=0;
+}
+Model.prototype.g=function(name){
+  if(!this.groups[name]) this.groups[name]={name:name,color:PAL[name]||0x888888,pos:[],nrm:[]};
+  return this.groups[name];
+};
+function pushTri(g,a,b,c){
+  var ux=b.x-a.x,uy=b.y-a.y,uz=b.z-a.z;
+  var vx=c.x-a.x,vy=c.y-a.y,vz=c.z-a.z;
+  var nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+  var l=Math.hypot(nx,ny,nz)||1; nx/=l;ny/=l;nz/=l;
+  g.pos.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
+  g.nrm.push(nx,ny,nz,nx,ny,nz,nx,ny,nz);
+}
+var _v=[]; for(var i=0;i<8;i++) _v.push(new THREE.Vector3());
+function emitBox(g,m,edgesOut,edgeW){
+  for(var i=0;i<8;i++) _v[i].set(CUBE[i][0],CUBE[i][1],CUBE[i][2]).applyMatrix4(m);
+  for(var f=0;f<6;f++){
+    var q=QFACE[f];
+    pushTri(g,_v[q[0]],_v[q[1]],_v[q[2]]);
+    pushTri(g,_v[q[0]],_v[q[2]],_v[q[3]]);
+  }
+  if(edgesOut){
+    for(var e=0;e<12;e++){
+      edgesOut.push({a:_v[BEDGE[e][0]].clone(),b:_v[BEDGE[e][1]].clone(),w:edgeW});
+    }
+  }
+}
+var _mat=new THREE.Matrix4(), _q=new THREE.Quaternion(), _mid=new THREE.Vector3(),
+    _dir=new THREE.Vector3(), _scl=new THREE.Vector3();
+function strut(model,gname,p1,p2,th,margin){
+  _dir.subVectors(p2,p1);
+  var len=_dir.length(); if(len<1e-5) return;
+  _dir.multiplyScalar(1/len);
+  _q.setFromUnitVectors(UP,_dir);
+  _mid.addVectors(p1,p2).multiplyScalar(0.5);
+  var t=th+margin*2;
+  _scl.set(t,len+margin*2,t);
+  _mat.compose(_mid,_q,_scl);
+  emitBox(model.g(gname),_mat,null,0);
+  model.struts++;
+  if(margin===0) model.edges.push({a:p1.clone(),b:p2.clone(),w:th});
+}
+function box(model,gname,center,size,rotY,margin,recordEdges){
+  _q.setFromAxisAngle(UP,rotY);
+  _scl.set(size.x+margin*2,size.y+margin*2,size.z+margin*2);
+  _mat.compose(center,_q,_scl);
+  emitBox(model.g(gname),_mat, (margin===0&&recordEdges)?model.edges:null, size.x*0.5);
+}
+
+/* ===================== FORM + NODE FIELD ===================== */
+function topY(){return (params.floors-1)*params.floorHeight;}
+function formAt(t){
+  var w=params.baseWidth*(1-t)+params.baseWidth*params.taper*t;
+  var d=params.baseDepth*(1-t)+params.baseDepth*params.taper*t;
+  var rot=params.twist*Math.PI/180*t;
+  // lean: linear cantilever in X with a soft S from a fixed phase
+  var lx=params.lean*params.baseWidth*1.6*t;
+  return {w:w,d:d,rot:rot,cx:lx,cz:0};
+}
+function nodeAt(t,u,v){ // u,v in [-0.5,0.5]
+  var f=formAt(t);
+  var x=u*f.w, z=v*f.d;
+  var cs=Math.cos(f.rot),sn=Math.sin(f.rot);
+  return new THREE.Vector3(x*cs-z*sn+f.cx, t*topY(), x*sn+z*cs+f.cz);
+}
+// vertical keep-clear shaft following the structural axis
+function voidRadius(){
+  return Math.max(0.9, Math.min(params.baseWidth,params.baseDepth)*0.19);
+}
+function inVoid(p,t){
+  if(!params.coreVoid) return false;
+  var f=formAt(t), vr=voidRadius();
+  var dx=p.x-f.cx, dz=p.z-f.cz;
+  return (dx*dx+dz*dz)<vr*vr;
+}
+
+/* ===================== TYPOLOGY GENERATORS =================== */
+var STRUT_CAP=18000;
+
+function genGrid(model,mg){
+  var F=params.floors, nx=params.bays, nz=params.bays, jit=params.irregularity;
+  var ms=params.memberSize;
+  // node field [floor][a][b]
+  var N=[];
+  for(var i=0;i<F;i++){
+    var t=F>1?i/(F-1):0, layer=[];
+    for(var a=0;a<=nx;a++){
+      var col=[];
+      for(var b=0;b<=nz;b++){
+        var p=nodeAt(t,a/nx-0.5,b/nz-0.5);
+        var perim=(a===0||a===nx||b===0||b===nz);
+        if(jit>0){
+          var amp=jit*(perim?0.18:0.32);
+          p.x+=rr(-1,1)*amp; p.z+=rr(-1,1)*amp; p.y+=rr(-1,1)*amp*0.4;
+        }
+        col.push(p);
+      }
+      layer.push(col);
+    }
+    N.push(layer);
+  }
+  // columns (perimeter + interior by density)
+  for(var a=0;a<=nx;a++) for(var b=0;b<=nz;b++){
+    var perim=(a===0||a===nx||b===0||b===nz);
+    if(!perim && rnd()>params.density*0.6) continue;
+    if(!perim && inVoid(N[Math.floor((F-1)/2)][a][b],0.5)) continue;
+    for(var i=0;i<F-1;i++){
+      if(model.struts>STRUT_CAP) return;
+      strut(model,perim?"column":"column",N[i][a][b],N[i+1][a][b],ms,mg);
+    }
+  }
+  // perimeter beams per floor
+  for(var i=0;i<F;i++){
+    for(var a=0;a<nx;a++){
+      if((0===0)) strut(model,"beam",N[i][a][0],N[i][a+1][0],ms*0.85,mg);
+      strut(model,"beam",N[i][a][nz],N[i][a+1][nz],ms*0.85,mg);
+    }
+    for(var b=0;b<nz;b++){
+      strut(model,"beam",N[i][0][b],N[i][0][b+1],ms*0.85,mg);
+      strut(model,"beam",N[i][nx][b],N[i][nx][b+1],ms*0.85,mg);
+    }
+  }
+  // recursive facade bracing
+  var depth=Math.round(params.bracing*2.4);
+  function recurse(p00,p10,p11,p01,d){
+    if(d<=0 || model.struts>STRUT_CAP) return;
+    strut(model,"brace",p00,p11,ms*0.6,mg);
+    strut(model,"brace",p10,p01,ms*0.6,mg);
+    var m00=p00.clone().lerp(p11,0.5);
+    var e0=p00.clone().lerp(p10,0.5), e1=p10.clone().lerp(p11,0.5),
+        e2=p11.clone().lerp(p01,0.5), e3=p01.clone().lerp(p00,0.5);
+    recurse(p00,e0,m00,e3,d-1); recurse(e0,p10,e1,m00,d-1);
+    recurse(m00,e1,p11,e2,d-1); recurse(e3,m00,e2,p01,d-1);
+  }
+  if(depth>0){
+    for(var i=0;i<F-1;i++){
+      for(var a=0;a<nx;a++){
+        if(rnd()<params.bracing){
+          recurse(N[i][a][0],N[i][a+1][0],N[i+1][a+1][0],N[i+1][a][0],depth);
+        }
+        if(rnd()<params.bracing){
+          recurse(N[i][a][nz],N[i][a+1][nz],N[i+1][a+1][nz],N[i+1][a][nz],depth);
+        }
+      }
+      for(var b=0;b<nz;b++){
+        if(rnd()<params.bracing){
+          recurse(N[i][0][b],N[i][0][b+1],N[i+1][0][b+1],N[i+1][0][b],depth);
+        }
+        if(rnd()<params.bracing){
+          recurse(N[i][nx][b],N[i][nx][b+1],N[i+1][nx][b+1],N[i+1][nx][b],depth);
+        }
+      }
+    }
+  }
+  if(params.core) buildCore(model,mg);
+}
+
+function genSpaceFrame(model,mg){
+  var F=params.floors, nx=Math.min(params.bays,6), nz=Math.min(params.bays,6);
+  var nl=Math.max(3,Math.min(Math.round(F*0.55),16));
+  var ms=params.memberSize, jit=params.irregularity;
+  // chord layers
+  var CH=[];
+  for(var k=0;k<nl;k++){
+    var t=k/(nl-1), layer=[];
+    for(var a=0;a<=nx;a++){ var col=[];
+      for(var b=0;b<=nz;b++){
+        var p=nodeAt(t,a/nx-0.5,b/nz-0.5);
+        if(jit>0){p.x+=rr(-1,1)*jit*0.2;p.z+=rr(-1,1)*jit*0.2;}
+        col.push(p);
+      } layer.push(col);
+    }
+    CH.push(layer);
+  }
+  // web (center) nodes between chord layers, pushed toward mid
+  var WB=[];
+  for(var k=0;k<nl-1;k++){
+    var tm=(k+0.5)/(nl-1), layer=[];
+    for(var a=0;a<nx;a++){ var col=[];
+      for(var b=0;b<nz;b++){
+        var p=nodeAt(tm,(a+0.5)/nx-0.5,(b+0.5)/nz-0.5);
+        // pull inward slightly for octet look
+        var f=formAt(tm); p.x*=0.82; p.z*=0.82;
+        if(jit>0){p.x+=rr(-1,1)*jit*0.15;p.z+=rr(-1,1)*jit*0.15;}
+        col.push(p);
+      } layer.push(col);
+    }
+    WB.push(layer);
+  }
+  // chords (horizontal struts in each chord layer)
+  for(var k=0;k<nl;k++){
+    for(var a=0;a<=nx;a++) for(var b=0;b<=nz;b++){
+      if(model.struts>STRUT_CAP) return;
+      if(a<nx) strut(model,"chord",CH[k][a][b],CH[k][a+1][b],ms,mg);
+      if(b<nz) strut(model,"chord",CH[k][a][b],CH[k][a][b+1],ms,mg);
+    }
+  }
+  // vertical chords + web (octahedral webs from center node to 8 corners)
+  var webEvery=params.bracing>0.05;
+  for(var k=0;k<nl-1;k++){
+    for(var a=0;a<nx;a++) for(var b=0;b<nz;b++){
+      if(model.struts>STRUT_CAP) return;
+      var c=WB[k][a][b];
+      var tmw=(k+0.5)/(nl-1);
+      if(inVoid(c,tmw)) continue;
+      var below=[CH[k][a][b],CH[k][a+1][b],CH[k][a+1][b+1],CH[k][a][b+1]];
+      var above=[CH[k+1][a][b],CH[k+1][a+1][b],CH[k+1][a+1][b+1],CH[k+1][a][b+1]];
+      for(var s=0;s<4;s++){
+        strut(model,"web",c,below[s],ms*0.7,mg);
+        strut(model,"web",c,above[s],ms*0.7,mg);
+      }
+    }
+  }
+  // vertical chord columns
+  for(var k=0;k<nl-1;k++){
+    for(var a=0;a<=nx;a++) for(var b=0;b<=nz;b++){
+      if(model.struts>STRUT_CAP) return;
+      var interior=(a>0&&a<nx&&b>0&&b<nz);
+      if(interior && inVoid(CH[k][a][b],k/(nl-1))) continue;
+      strut(model,"chord",CH[k][a][b],CH[k+1][a][b],ms*0.85,mg);
+    }
+  }
+  if(params.core) buildCore(model,mg);
+}
+
+function genFoam(model,mg){
+  var F=params.floors, ms=params.memberSize;
+  var count=Math.round((26+params.density*230)*(0.55+F/55)/params.cellSize);
+  count=Math.min(count,460);
+  var pts=[];
+  for(var i=0;i<count;i++){
+    var p=null;
+    for(var tries=0;tries<14;tries++){
+      var t=Math.pow(rnd(),0.85); // bias slightly low
+      var cand=nodeAt(t,rr(-0.5,0.5),rr(-0.5,0.5));
+      cand.y+=rr(-1,1)*params.irregularity*0.5;
+      if(!inVoid(cand,t)){ p=cand; break; }
+    }
+    if(p) pts.push(p); // skipped if all attempts land in the clear core
+  }
+  // connect each point to m nearest neighbours
+  var m=2+Math.round(params.bracing*5);
+  var seen={};
+  for(var i=0;i<pts.length;i++){
+    var d=[];
+    for(var j=0;j<pts.length;j++){ if(i===j) continue;
+      d.push([pts[i].distanceToSquared(pts[j]),j]);
+    }
+    d.sort(function(a,b){return a[0]-b[0];});
+    for(var k=0;k<Math.min(m,d.length);k++){
+      var j=d[k][1];
+      var key=i<j?i+"_"+j:j+"_"+i;
+      if(seen[key]) continue; seen[key]=1;
+      if(model.struts>STRUT_CAP) return;
+      strut(model,"web",pts[i],pts[j],ms,mg);
+    }
+  }
+  // node beads — scale with cell size
+  var bd=ms*2.4*params.cellSize;
+  var nsz=new THREE.Vector3(bd,bd,bd);
+  for(var i=0;i<pts.length;i++){
+    box(model,"node",pts[i],nsz,rr(0,3.14),mg,false);
+  }
+  if(params.core) buildCore(model,mg);
+}
+
+function genCapsule(model,mg){
+  var F=params.floors, ms=params.memberSize;
+  var prev=null;
+  for(var i=0;i<F;i++){
+    var t=F>1?i/(F-1):0;
+    var f=formAt(t);
+    // skip floors to make voids
+    if(rnd()<(1-params.density)*0.32 && i>0 && i<F-1){ prev=null; continue; }
+    var sv=(1-params.irregularity*rr(0,0.35))*params.cellSize;
+    var sz=new THREE.Vector3(f.w*sv, params.floorHeight*0.86, f.d*sv);
+    var off=params.irregularity*Math.min(f.w,f.d)*0.45;
+    var cx=f.cx+rr(-1,1)*off, cz=f.cz+rr(-1,1)*off;
+    var c=new THREE.Vector3(cx, t*topY(), cz);
+    var rot=f.rot+rr(-1,1)*params.irregularity*0.5;
+    box(model,"module",c,sz,rot,mg,true);
+    // skybridge connectors between stacked modules
+    if(prev && params.bracing>0.1 && rnd()<params.bracing){
+      strut(model,"beam",prev,c,ms*1.1,mg);
+    }
+    prev=c;
+  }
+  if(params.core) buildCore(model,mg);
+}
+
+function buildCore(model,mg){
+  var F=params.floors, ms=params.memberSize;
+  var coreW=Math.max(params.baseWidth,params.baseDepth)*0.16;
+  for(var i=0;i<F-1;i++){
+    var t0=F>1?i/(F-1):0, t1=F>1?(i+1)/(F-1):0;
+    var off=coreW*0.5;
+    var verts=[[-off,-off],[off,-off],[off,off],[-off,off]];
+    for(var c=0;c<4;c++){
+      var f0=formAt(t0), f1=formAt(t1);
+      var p0=new THREE.Vector3(verts[c][0]+f0.cx,t0*topY(),verts[c][1]+f0.cz);
+      var p1=new THREE.Vector3(verts[c][0]+f1.cx,t1*topY(),verts[c][1]+f1.cz);
+      strut(model,"core",p0,p1,ms*1.1,mg);
+    }
+  }
+}
+
+function generate(margin){
+  rng=mulberry32(params.seed>>>0);
+  var model=new Model();
+  if(params.typology===0) genGrid(model,margin);
+  else if(params.typology===1) genSpaceFrame(model,margin);
+  else if(params.typology===2) genFoam(model,margin);
+  else genCapsule(model,margin);
+  return model;
+}
+
+/* ====================== THREE.JS SCENE ====================== */
+var view=document.getElementById("view");
+var scene=new THREE.Scene();
+var camera=new THREE.PerspectiveCamera(42,1,0.1,2000);
+var renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.insertBefore(renderer.domElement,view.firstChild);
+
+var dirLight=new THREE.DirectionalLight(0xffffff,0.95);
+dirLight.castShadow=true;
+dirLight.shadow.mapSize.set(2048,2048);
+var ambLight=new THREE.AmbientLight(0xffffff,0.45);
+var hemi=new THREE.HemisphereLight(0xbcc6d4,0x20242c,0.4);
+scene.add(dirLight,ambLight,hemi);
+
+var ground=new THREE.Mesh(
+  new THREE.PlaneGeometry(400,400),
+  new THREE.MeshLambertMaterial({color:0x14161b})
+);
+ground.rotation.x=-Math.PI/2;
+ground.receiveShadow=true;
+scene.add(ground);
+
+var modelGroup=new THREE.Group();
+scene.add(modelGroup);
+
+/* ---- orbit (Blender-style turntable) ---- */
+var orbit={az:0.7,el:0.42,radius:40,target:new THREE.Vector3(0,10,0)};
+function applyCamera(){
+  var ce=Math.cos(orbit.el),se=Math.sin(orbit.el);
+  camera.position.set(
+    orbit.target.x+orbit.radius*ce*Math.sin(orbit.az),
+    orbit.target.y+orbit.radius*se,
+    orbit.target.z+orbit.radius*ce*Math.cos(orbit.az)
+  );
+  camera.lookAt(orbit.target);
+}
+var dragging=false,lx=0,ly=0;
+renderer.domElement.addEventListener("mousedown",function(e){
+  dragging=true;lx=e.clientX;ly=e.clientY;
+});
+window.addEventListener("mouseup",function(){dragging=false;});
+window.addEventListener("mousemove",function(e){
+  if(!dragging) return;
+  var dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX;ly=e.clientY;
+  orbit.az-=dx*0.009;
+  orbit.el+=dy*0.009;
+  var lim=77*Math.PI/180;
+  orbit.el=Math.max(-lim,Math.min(lim,orbit.el));
+});
+renderer.domElement.addEventListener("wheel",function(e){
+  e.preventDefault();
+  orbit.radius*=(1+e.deltaY*0.0011);
+  orbit.radius=Math.max(4,Math.min(400,orbit.radius));
+},{passive:false});
+// touch
+var tlx=0,tly=0,tdrag=false;
+renderer.domElement.addEventListener("touchstart",function(e){
+  if(e.touches.length===1){tdrag=true;tlx=e.touches[0].clientX;tly=e.touches[0].clientY;}
+},{passive:true});
+renderer.domElement.addEventListener("touchmove",function(e){
+  if(tdrag&&e.touches.length===1){
+    var dx=e.touches[0].clientX-tlx,dy=e.touches[0].clientY-tly;
+    tlx=e.touches[0].clientX;tly=e.touches[0].clientY;
+    orbit.az-=dx*0.009;orbit.el+=dy*0.009;
+    var lim=77*Math.PI/180;
+    orbit.el=Math.max(-lim,Math.min(lim,orbit.el));
+  }
+},{passive:true});
+renderer.domElement.addEventListener("touchend",function(){tdrag=false;});
+
+/* ---- buildScene: tear down + rebuild ---- */
+var lastModel=null;
+function disposeGroup(){
+  for(var i=modelGroup.children.length-1;i>=0;i--){
+    var m=modelGroup.children[i];
+    if(m.geometry) m.geometry.dispose();
+    if(m.material) m.material.dispose();
+    modelGroup.remove(m);
+  }
+}
+function groupToGeometry(grp){
+  var g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(grp.pos,3));
+  g.setAttribute("normal",new THREE.Float32BufferAttribute(grp.nrm,3));
+  return g;
+}
+function buildScene(){
+  disposeGroup();
+  var ink=params.ink;
+  var fill=generate(0);
+  lastModel=fill;
+  var tris=0;
+
+  if(ink){
+    // outline pass: BackSide black, expanded primitives
+    var outline=generate(params.memberSize*0.55+0.025);
+    for(var name in outline.groups){
+      var grp=outline.groups[name];
+      var mesh=new THREE.Mesh(groupToGeometry(grp),
+        new THREE.MeshBasicMaterial({color:0x000000,side:THREE.BackSide}));
+      modelGroup.add(mesh);
+    }
+    // fill pass: flat white
+    for(var name in fill.groups){
+      var grp=fill.groups[name];
+      tris+=grp.pos.length/9;
+      var mesh=new THREE.Mesh(groupToGeometry(grp),
+        new THREE.MeshBasicMaterial({color:0xffffff}));
+      modelGroup.add(mesh);
+    }
+  }else{
+    for(var name in fill.groups){
+      var grp=fill.groups[name];
+      tris+=grp.pos.length/9;
+      var geo=groupToGeometry(grp);
+      var mesh=new THREE.Mesh(geo,
+        new THREE.MeshLambertMaterial({color:grp.color}));
+      mesh.castShadow=true; mesh.receiveShadow=true;
+      modelGroup.add(mesh);
+    }
+  }
+  applyTheme();
+
+  // update target / lighting / shadow frustum to fit tower
+  var H=topY();
+  orbit.target.y=H*0.5;
+  var span=Math.max(params.baseWidth,params.baseDepth,H*0.5);
+  dirLight.position.set(span*1.4,H*1.3+span,span*0.9);
+  dirLight.target.position.set(0,H*0.5,0);
+  scene.add(dirLight.target);
+  var sc=dirLight.shadow.camera;
+  var r=Math.max(H,span)*1.2;
+  sc.left=-r;sc.right=r;sc.top=r;sc.bottom=-r;sc.near=1;sc.far=r*4+span*2;
+  sc.updateProjectionMatrix();
+
+  document.getElementById("stats").innerHTML=
+    TYPO[params.typology].toUpperCase()+" &middot; "+fill.struts+
+    " members<br>"+tris.toLocaleString()+" triangles &middot; "+
+    Object.keys(fill.groups).length+" mat groups";
+}
+function applyTheme(){
+  if(params.ink){
+    scene.background=new THREE.Color(0xfaf8f4);
+    ground.visible=false;
+  }else{
+    scene.background=new THREE.Color(0x101216);
+    ground.visible=true;
+  }
+}
+
+/* ---- debounced rebuild ---- */
+var rebuildTimer=null;
+function scheduleBuild(){
+  if(rebuildTimer) clearTimeout(rebuildTimer);
+  rebuildTimer=setTimeout(buildScene,100);
+}
+
+/* ====================== AXIS GIZMO ========================== */
+var giz=document.getElementById("gizmo"), gctx=giz.getContext("2d");
+function drawGizmo(){
+  gctx.clearRect(0,0,48,48);
+  var cx=24,cy=24,len=15;
+  var m=camera.matrixWorldInverse.elements;
+  // rows of view matrix give world axes in camera space
+  var axes=[
+    {v:[m[0],m[4],m[8]],c:"#e0533d",l:"X"},
+    {v:[m[1],m[5],m[9]],c:"#5fb04e",l:"Y"},
+    {v:[m[2],m[6],m[10]],c:"#4d86c4",l:"Z"}
+  ];
+  axes.sort(function(a,b){return a.v[2]-b.v[2];}); // far first
+  for(var i=0;i<axes.length;i++){
+    var a=axes[i], ex=cx+a.v[0]*len, ey=cy-a.v[1]*len;
+    var front=a.v[2]>=-0.02;
+    gctx.strokeStyle=a.c; gctx.globalAlpha=front?1:0.4;
+    gctx.lineWidth=front?2:1.4;
+    gctx.beginPath();gctx.moveTo(cx,cy);gctx.lineTo(ex,ey);gctx.stroke();
+    gctx.fillStyle=a.c; gctx.globalAlpha=front?1:0.35;
+    gctx.beginPath();gctx.arc(ex,ey,front?3.4:2.4,0,6.283);gctx.fill();
+    if(front){
+      gctx.fillStyle="#0e0f12";gctx.font="bold 6px monospace";
+      gctx.textAlign="center";gctx.textBaseline="middle";
+      gctx.fillText(a.l,ex,ey+0.5);
+    }
+  }
+  gctx.globalAlpha=1;
+}
+
+/* ====================== RENDER LOOP ========================= */
+function resize(){
+  var w=view.clientWidth,h=view.clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize);
+function loop(){
+  requestAnimationFrame(loop);
+  applyCamera();
+  renderer.render(scene,camera);
+  drawGizmo();
+}
+
+/* ========================== EXPORTS ========================= */
+function download(name,text,mime){
+  var blob=new Blob([text],{type:mime||"text/plain"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+function exportOBJ(){
+  var model=lastModel||generate(0);
+  var obj="# Vertical Structures parametric generator\n";
+  obj+="# typology: "+TYPO[params.typology]+"  seed: "+params.seed+"\n";
+  obj+="mtllib vertical-structures.mtl\n";
+  var vOff=1;
+  for(var name in model.groups){
+    var grp=model.groups[name];
+    var pos=grp.pos,nrm=grp.nrm,n=pos.length/3;
+    if(n===0) continue;
+    obj+="g "+name+"\nusemtl "+name+"\n";
+    for(var i=0;i<n;i++){
+      obj+="v "+pos[i*3].toFixed(4)+" "+pos[i*3+1].toFixed(4)+" "+pos[i*3+2].toFixed(4)+"\n";
+    }
+    for(var i=0;i<n;i++){
+      obj+="vn "+nrm[i*3].toFixed(4)+" "+nrm[i*3+1].toFixed(4)+" "+nrm[i*3+2].toFixed(4)+"\n";
+    }
+    for(var i=0;i<n;i+=3){
+      var x=vOff+i;
+      obj+="f "+x+"//"+x+" "+(x+1)+"//"+(x+1)+" "+(x+2)+"//"+(x+2)+"\n";
+    }
+    vOff+=n;
+  }
+  var mtl="# Vertical Structures materials\n";
+  for(var name in model.groups){
+    var c=new THREE.Color(model.groups[name].color);
+    mtl+="newmtl "+name+"\n";
+    mtl+="Kd "+c.r.toFixed(4)+" "+c.g.toFixed(4)+" "+c.b.toFixed(4)+"\n";
+    mtl+="Ka 0.0 0.0 0.0\nKs 0.05 0.05 0.05\nNs 16\nillum 2\n\n";
+  }
+  download("vertical-structures.obj",obj);
+  setTimeout(function(){download("vertical-structures.mtl",mtl);},250);
+}
+function exportSVG(){
+  var model=lastModel||generate(0);
+  var W=view.clientWidth,H=view.clientHeight;
+  camera.updateMatrixWorld();
+  var vp=new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+  // px-per-world scale estimate for stroke width
+  var focal=(H*0.5)/Math.tan(camera.fov*Math.PI/360);
+  var pxw=focal/orbit.radius;
+  var lines=[];
+  var pa=new THREE.Vector3(),pb=new THREE.Vector3();
+  for(var i=0;i<model.edges.length;i++){
+    var e=model.edges[i];
+    pa.copy(e.a).applyMatrix4(vp);
+    pb.copy(e.b).applyMatrix4(vp);
+    if(pa.z<-1||pa.z>1||pb.z<-1||pb.z>1) continue;
+    var x1=(pa.x*0.5+0.5)*W, y1=(-pa.y*0.5+0.5)*H;
+    var x2=(pb.x*0.5+0.5)*W, y2=(-pb.y*0.5+0.5)*H;
+    var sw=Math.max(0.25,Math.min(e.w*pxw,7));
+    lines.push('<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+
+      '" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+
+      '" stroke-width="'+sw.toFixed(2)+'"/>');
+  }
+  var svg='<?xml version="1.0" encoding="UTF-8"?>\n'+
+    '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+
+    '" viewBox="0 0 '+W+' '+H+'">\n'+
+    '<rect width="'+W+'" height="'+H+'" fill="#faf8f4"/>\n'+
+    '<g stroke="#111" fill="none" stroke-linecap="round">\n'+
+    lines.join("\n")+'\n</g>\n</svg>\n';
+  download("vertical-structures.svg",svg,"image/svg+xml");
+}
+
+/* ======================= UI BUILDING ======================== */
+var controls=document.getElementById("controls");
+var sliderEls={};
+function buildUI(){
+  SCHEMA.forEach(function(item){
+    if(item.s){
+      var sec=document.createElement("div");
+      sec.className="sect";
+      sec.innerHTML='<div class="sect-t">'+item.s+'</div>';
+      controls.appendChild(sec);
+      controls._cur=sec;
+      return;
+    }
+    var row=document.createElement("div");
+    row.className="row";
+    var fmt=item.fmt||function(v){return (v%1===0)?v:v.toFixed(2);};
+    row.innerHTML='<label><span>'+item.l+'</span><span class="val">'+
+      fmt(params[item.k])+'</span></label>';
+    var inp=document.createElement("input");
+    inp.type="range";inp.min=item.min;inp.max=item.max;inp.step=item.step;
+    inp.value=params[item.k];
+    row.appendChild(inp);
+    controls._cur.appendChild(row);
+    sliderEls[item.k]={input:inp,val:row.querySelector(".val"),fmt:fmt};
+    inp.addEventListener("input",function(){
+      var v=parseFloat(inp.value);
+      params[item.k]=v;
+      sliderEls[item.k].val.textContent=fmt(v);
+      scheduleBuild();
+    });
+  });
+}
+function syncUI(){
+  for(var k in sliderEls){
+    sliderEls[k].input.value=params[k];
+    sliderEls[k].val.textContent=sliderEls[k].fmt(params[k]);
+  }
+  document.getElementById("seed").value=params.seed;
+  document.getElementById("ink").classList.toggle("on",params.ink);
+  document.getElementById("core").classList.toggle("on",params.core);
+  document.getElementById("coreVoid").classList.toggle("on",params.coreVoid);
+}
+buildUI();
+
+// presets
+var presetWrap=document.getElementById("presets");
+Object.keys(PRESETS).forEach(function(name){
+  var b=document.createElement("button");
+  b.className="preset";b.textContent=name;
+  b.addEventListener("click",function(){
+    var p=PRESETS[name];
+    for(var k in p) params[k]=p[k];   // seed stays constant
+    syncUI();
+    buildScene();
+  });
+  presetWrap.appendChild(b);
+});
+
+// seed
+var seedInput=document.getElementById("seed");
+seedInput.addEventListener("change",function(){
+  var v=parseInt(this.value,10);
+  if(isNaN(v)) v=0;
+  params.seed=v>>>0;
+  this.value=params.seed;
+  buildScene();
+});
+document.getElementById("rand").addEventListener("click",function(){
+  params.seed=Math.floor(Math.random()*4294967295)>>>0;
+  seedInput.value=params.seed;
+  buildScene();
+});
+
+// toggles
+document.getElementById("ink").addEventListener("click",function(){
+  params.ink=!params.ink;
+  this.classList.toggle("on",params.ink);
+  buildScene();
+});
+document.getElementById("core").addEventListener("click",function(){
+  params.core=!params.core;
+  this.classList.toggle("on",params.core);
+  buildScene();
+});
+document.getElementById("coreVoid").addEventListener("click",function(){
+  params.coreVoid=!params.coreVoid;
+  this.classList.toggle("on",params.coreVoid);
+  buildScene();
+});
+
+// exports
+document.getElementById("exObj").addEventListener("click",exportOBJ);
+document.getElementById("exSvg").addEventListener("click",exportSVG);
+
+/* ========================== START =========================== */
+resize();
+buildScene();
+loop();
+
+})();
+</script>
+</body>
+</html>
