@@ -1,0 +1,17 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { withBase } from '@/lib/url';
+---
+<BaseLayout title="Not found" description="That page doesn't exist.">
+  <section class="container-page flex min-h-[60vh] flex-col justify-center py-20">
+    <p class="label !text-accent">Error 404</p>
+    <h1 class="mt-4 text-5xl font-semibold tracking-tight md:text-7xl">Not found.</h1>
+    <p class="mt-5 max-w-md text-ink-muted">
+      The page you're after has moved or never existed.
+    </p>
+    <div class="mt-8 flex gap-6">
+      <a href={withBase('/')} class="link-underline text-sm font-medium">Home →</a>
+      <a href={withBase('/projects')} class="link-underline text-sm font-medium text-ink-muted hover:text-ink">Work →</a>
+    </div>
+  </section>
+</BaseLayout>

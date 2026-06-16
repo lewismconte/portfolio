@@ -1,0 +1,98 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import FormattedDate from '@/components/FormattedDate.astro';
+import { withBase } from '@/lib/url';
+import { SOCIAL } from '@/consts';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).sort(
+    (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+  );
+  return projects.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: { entry, next: projects[(i + 1) % projects.length] },
+  }));
+}
+
+const { entry, next } = Astro.props;
+const { data } = entry;
+const { Content } = await render(entry);
+---
+<BaseLayout title={data.title} description={data.summary} image={undefined} type="article">
+  <article class="lightbox-scope">
+    <!-- Cover -->
+    <div class="container-page pt-6 md:pt-8">
+      <a href={withBase('/projects')} class="label link-underline inline-flex items-center gap-1.5 hover:!text-ink">
+        ← Work
+      </a>
+    </div>
+    <figure class="container-page mt-5">
+      <div class="overflow-hidden border border-line bg-bg-elev">
+        <Image
+          src={data.cover}
+          alt={data.coverAlt ?? data.title}
+          widths={[720, 1200, 1800]}
+          sizes="(max-width: 1408px) 100vw, 1408px"
+          loading="eager"
+          class="h-auto w-full object-cover"
+        />
+      </div>
+    </figure>
+
+    <!-- Header -->
+    <header class="container-page mt-10 md:mt-14">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span class="label !text-accent">{data.category}</span>
+        <span class="label"><FormattedDate date={data.date} mode="year" /></span>
+      </div>
+      <h1 class="mt-4 max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">{data.title}</h1>
+      <p class="mt-5 max-w-2xl text-lg text-ink-muted">{data.summary}</p>
+    </header>
+
+    <!-- Body + details -->
+    <div class="container-page mt-12 grid gap-x-10 gap-y-12 md:mt-16 lg:grid-cols-12">
+      <div class="prose lg:col-span-8">
+        <Content />
+      </div>
+
+      <aside class="lg:col-span-4">
+        <div class="lg:sticky lg:top-24">
+          {data.details.length > 0 && (
+            <>
+              <p class="label border-b border-line pb-3">Details</p>
+              <dl class="mt-4 space-y-4">
+                {data.details.map((d) => (
+                  <div>
+                    <dt class="label !tracking-normal !text-ink-faint">{d.label}</dt>
+                    <dd class="mt-0.5 text-sm text-ink">{d.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
+          <a
+            href={`mailto:${SOCIAL.email}?subject=${encodeURIComponent('Re: ' + data.title)}`}
+            class="link-underline mt-8 inline-block text-sm text-accent"
+          >
+            Discuss this project →
+          </a>
+        </div>
+      </aside>
+    </div>
+  </article>
+
+  <!-- Next project -->
+  {next && next.id !== entry.id && (
+    <nav class="container-page mt-24 border-t border-line pt-8" aria-label="Next project">
+      <p class="label">Next project</p>
+      <a href={withBase(`/projects/${next.id}`)} class="group mt-2 flex items-baseline justify-between gap-4">
+        <span class="text-2xl font-semibold tracking-tight transition-colors group-hover:text-accent md:text-4xl">
+          {next.data.title}
+        </span>
+        <span class="text-accent transition-transform group-hover:translate-x-1">→</span>
+      </a>
+    </nav>
+  )}
+</BaseLayout>

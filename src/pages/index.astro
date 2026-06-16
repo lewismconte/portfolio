@@ -1,0 +1,87 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
+import FormattedDate from '@/components/FormattedDate.astro';
+import { withBase } from '@/lib/url';
+import { SITE, SOCIAL } from '@/consts';
+
+const projects = (await getCollection('projects', ({ data }) => import.meta.env.PROD ? !data.draft : true))
+  .sort((a, b) => {
+    if (a.data.featured !== b.data.featured) return a.data.featured ? -1 : 1;
+    return b.data.date.valueOf() - a.data.date.valueOf();
+  })
+  .slice(0, 6);
+
+const posts = (await getCollection('blog', ({ data }) => import.meta.env.PROD ? !data.draft : true))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 2);
+---
+<BaseLayout>
+  <!-- Intro -->
+  <section class="container-page pt-16 md:pt-28">
+    <p class="label">{SITE.author} — {SITE.tagline}</p>
+    <h1 class="mt-5 max-w-5xl text-[2.6rem] font-semibold leading-[1.02] tracking-tight md:text-7xl lg:text-[5.5rem]">
+      I design buildings, and the tools that build them.
+    </h1>
+    <div class="mt-8 grid gap-6 md:grid-cols-12">
+      <p class="max-w-2xl text-lg text-ink-muted md:col-span-8 lg:col-span-7">
+        Architecture graduate working between technical precision and creative vision — from copper
+        canopies and adaptive-reuse offices to parametric geometry and the BIM tooling I build to make
+        documentation faster. This is my work, and a notebook of how I think about it.
+      </p>
+      <div class="flex items-end gap-6 md:col-span-4 md:justify-end">
+        <a href={withBase('/projects')} class="link-underline text-sm font-medium">View work →</a>
+        <a href={withBase('/blog')} class="link-underline text-sm font-medium text-ink-muted hover:text-ink">Notebook →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Selected work -->
+  <section class="container-page mt-20 md:mt-28">
+    <div class="flex items-baseline justify-between border-t border-line pt-5">
+      <h2 class="label">Selected Work</h2>
+      <a href={withBase('/projects')} class="label link-underline hover:!text-ink">All projects →</a>
+    </div>
+    <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+      {projects.map((entry, i) => <ProjectCard entry={entry} eager={i < 3} />)}
+    </div>
+  </section>
+
+  <!-- Notebook -->
+  {posts.length > 0 && (
+    <section class="container-page mt-24 md:mt-32">
+      <div class="flex items-baseline justify-between border-t border-line pt-5">
+        <h2 class="label">From the Notebook</h2>
+        <a href={withBase('/blog')} class="label link-underline hover:!text-ink">All posts →</a>
+      </div>
+      <ul class="mt-6">
+        {posts.map((post) => (
+          <li class="border-b border-line" data-reveal>
+            <a href={withBase(`/blog/${post.id}`)} class="group grid gap-1 py-6 md:grid-cols-12 md:gap-6">
+              <span class="label md:col-span-3"><FormattedDate date={post.data.date} /></span>
+              <div class="md:col-span-9">
+                <h3 class="text-xl font-semibold tracking-tight transition-colors group-hover:text-accent md:text-2xl">
+                  {post.data.title}
+                </h3>
+                <p class="mt-1 max-w-2xl text-ink-muted">{post.data.summary}</p>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <!-- Contact -->
+  <section class="container-page mt-24 md:mt-32">
+    <div class="border-t border-line pt-10">
+      <h2 class="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">
+        Building something, or just want to talk shop?
+      </h2>
+      <a href={`mailto:${SOCIAL.email}`} class="link-underline mt-6 inline-block text-lg text-accent">
+        {SOCIAL.email} →
+      </a>
+    </div>
+  </section>
+</BaseLayout>
