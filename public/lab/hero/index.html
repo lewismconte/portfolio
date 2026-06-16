@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Morphing Hero — Lewis Conte Lab</title>
+    <meta name="description" content="Interactive morphing blobs — seeded organic shapes that repel the cursor and array on click. A port of an earlier portfolio hero." />
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    <style>
+      :root {
+        --bg: #0e0e10;
+        --ink: #ededeb;
+        --muted: #9a9a95;
+        --faint: #6a6a6d;
+        --line: #26262b;
+        --accent: #ff4a1c;
+        --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, monospace;
+        --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); overflow: hidden; }
+      #stage { position: fixed; inset: 0; cursor: pointer; }
+      svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+      svg path { transition: opacity .6s ease; }
+
+      .title { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%);
+        padding-inline: clamp(1.25rem, 8vw, 9rem); z-index: 10; pointer-events: none; }
+      .title h1 { margin: 0; font-family: var(--sans); font-weight: 800; letter-spacing: -.03em;
+        font-size: clamp(2.5rem, 9vw, 6rem); line-height: .98; }
+      .title h2 { margin: .25rem 0 0; font-family: var(--sans); font-weight: 800; letter-spacing: -.03em;
+        font-size: clamp(2rem, 7vw, 4.5rem); line-height: .98; color: var(--muted); }
+
+      .ui { position: fixed; z-index: 20; }
+      .ui a, .ui button, .ui input { pointer-events: auto; }
+      .topbar { top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; }
+      .kicker { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+      .back { color: var(--muted); text-decoration: none; }
+      .back:hover { color: var(--ink); }
+      .kicker.dim { color: var(--faint); }
+
+      .panel { bottom: 1.25rem; left: 50%; transform: translateX(-50%); width: min(20rem, calc(100vw - 2.5rem));
+        display: flex; flex-direction: column; gap: .6rem; padding: .9rem 1rem;
+        background: rgba(0,0,0,.28); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+      .row { display: flex; align-items: center; gap: .75rem; }
+      .row label { font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); width: 5.5rem; }
+      .row output { font-family: var(--mono); font-size: .72rem; color: var(--ink); width: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; }
+      input[type="range"] { flex: 1; accent-color: var(--accent); height: 2px; background: var(--line); }
+      .hint { text-align: center; font-family: var(--mono); font-size: .66rem; letter-spacing: .08em; color: var(--faint); }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <div class="title">
+        <h1>Lewis Conte</h1>
+        <h2>Portfolio.</h2>
+      </div>
+      <svg id="svg" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    </div>
+
+    <div class="ui topbar">
+      <a class="kicker back" href="../">← Lab</a>
+      <span class="kicker dim">Morphing Hero</span>
+    </div>
+
+    <div class="ui panel" id="panel">
+      <div class="row">
+        <label for="seed">Seed</label>
+        <input id="seed" type="range" min="0" max="99" step="1" value="0" />
+        <output id="seedOut">00</output>
+      </div>
+      <div class="row">
+        <label for="size">Size</label>
+        <input id="size" type="range" min="0" max="99" step="1" value="50" />
+        <output id="sizeOut">50</output>
+      </div>
+      <div class="row">
+        <label for="dist">Array dist</label>
+        <input id="dist" type="range" min="0" max="99" step="1" value="25" />
+        <output id="distOut">25</output>
+      </div>
+      <p class="hint" id="hint">Shape count: 1 — click anywhere to change</p>
+    </div>
+
+    <script>
+      // ---- tunables (ported from the original hero) -----------------------
+      const NUM_POINTS = 8;
+      const RENDER_SHAPES = 3;     // base shapes rendered (arrayed)
+      const MORPH_STRENGTH = 2, MORPH_SPEED = 0.01;
+      const REPULSION_STRENGTH = 0.9, RIGIDITY = 0.4, SPRING = 0.03;
+      const MIN_R = 50, MAX_R = 150, MAX_SHAPES = 6, TRANSITION = 1.2;
+
+      const seededRandom = (s) => () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+
+      function hslToRgb(h, s, l) {
+        const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+        let r, g, b;
+        if (h < 60) [r, g, b] = [c, x, 0]; else if (h < 120) [r, g, b] = [x, c, 0];
+        else if (h < 180) [r, g, b] = [0, c, x]; else if (h < 240) [r, g, b] = [0, x, c];
+        else if (h < 300) [r, g, b] = [x, 0, c]; else [r, g, b] = [c, 0, x];
+        return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+      }
+      const rgbToHex = (r, g, b) =>
+        "#" + ((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1);
+      const analogous = (baseHue) =>
+        Array.from({ length: RENDER_SHAPES }, (_, i) => {
+          const [r, g, b] = hslToRgb((baseHue + i * 30) % 360, 0.4, 0.5);
+          return rgbToHex(r, g, b);
+        });
+
+      const genPoints = (rnd, radius) =>
+        Array.from({ length: NUM_POINTS }, () => {
+          const a = rnd() * Math.PI * 2, r = radius * (0.6 + rnd() * 0.4);
+          const x = r * Math.cos(a), y = r * Math.sin(a);
+          return { x, y, ox: x, oy: y, phase: rnd() * Math.PI * 2 };
+        });
+
+      function smoothPath(pts) {
+        let d = "";
+        for (let i = 0; i < pts.length; i++) {
+          const p0 = pts[(i - 1 + pts.length) % pts.length], p1 = pts[i],
+                p2 = pts[(i + 1) % pts.length], p3 = pts[(i + 2) % pts.length];
+          if (i === 0) { d += `M ${p1.x},${p1.y}`; continue; }
+          const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+          const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+          d += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+        }
+        return d + "Z";
+      }
+
+      // ---- state ----------------------------------------------------------
+      const svg = document.getElementById("svg");
+      const SVGNS = "http://www.w3.org/2000/svg";
+      const baseSeed = Math.floor(Math.random() * 1e6);
+      let seed = 0, size = 50, arrayDist = 25, shapeCount = 1;
+      let mouse = { x: 0, y: 0 };
+      let shapes = [];          // {points, color}
+      let time = 0;
+      let trans = { p: 0, active: false };
+      const boundary = () => MIN_R + (MAX_R - MIN_R) * (size / 99);
+
+      function regenerate() {
+        const rnd = seededRandom(baseSeed + seed);
+        const colors = analogous(rnd() * 360);
+        const targets = shapes.map(() => genPoints(rnd, boundary()));
+        shapes = shapes.map((s, i) => ({ ...s, target: targets[i], color: colors[i % colors.length] }));
+        trans = { p: 0, active: true };
+        // No rebuild: the render loop picks up new targets/colours on existing paths.
+      }
+
+      function init() {
+        const rnd = seededRandom(baseSeed);
+        const colors = analogous(rnd() * 360);
+        shapes = Array.from({ length: 6 }, (_, i) => ({
+          points: genPoints(rnd, boundary()),
+          color: colors[i % colors.length],
+        }));
+        buildPaths();
+      }
+
+      // Build/refresh the path elements for the current shapeCount.
+      let paths = []; // {el, shapeIndex, angle}
+      function buildPaths() {
+        svg.textContent = "";
+        paths = [];
+        for (let si = 0; si < RENDER_SHAPES; si++) {
+          for (let ai = 0; ai < shapeCount; ai++) {
+            const el = document.createElementNS(SVGNS, "path");
+            el.setAttribute("fill", shapes[si].color);
+            el.style.mixBlendMode = "screen";
+            el.style.opacity = "0";
+            svg.appendChild(el);
+            requestAnimationFrame(() => (el.style.opacity = "1"));
+            paths.push({ el, shapeIndex: si, angle: (ai / shapeCount) * Math.PI * 2 });
+          }
+        }
+      }
+
+      function frame() {
+        time += MORPH_SPEED;
+        if (trans.active) {
+          trans.p += 1 / (60 * TRANSITION);
+          if (trans.p >= 1) { trans.active = false; trans.p = 1;
+            shapes = shapes.map((s) => ({ ...s, points: s.target || s.points })); }
+        }
+
+        // physics per base shape
+        for (const shape of shapes) {
+          let cur = shape.points;
+          if (trans.active && shape.target)
+            cur = shape.points.map((p, i) => ({
+              x: p.x + (shape.target[i].x - p.x) * trans.p,
+              y: p.y + (shape.target[i].y - p.y) * trans.p,
+              ox: p.ox + (shape.target[i].ox - p.ox) * trans.p,
+              oy: p.oy + (shape.target[i].oy - p.oy) * trans.p,
+              phase: p.phase,
+            }));
+          const R = boundary();
+          shape.points = cur.map((p, i) => {
+            const dx = mouse.x - p.x, dy = mouse.y - p.y;
+            const dist = Math.hypot(dx, dy), rep = REPULSION_STRENGTH / (dist + 1);
+            let nx = p.x - dx * rep, ny = p.y - dy * rep;
+            nx += (p.ox - nx) * RIGIDITY; ny += (p.oy - ny) * RIGIDITY;
+            nx += -nx * SPRING; ny += -ny * SPRING;
+            const m = Math.sin(time + p.phase + i * ((Math.PI * 2) / NUM_POINTS));
+            nx += m * MORPH_STRENGTH; ny += m * MORPH_STRENGTH;
+            const dc = Math.hypot(nx, ny);
+            if (dc > R) { const a = Math.atan2(ny, nx); nx = Math.cos(a) * R; ny = Math.sin(a) * R; }
+            return { x: nx, y: ny, ox: p.ox, oy: p.oy, phase: p.phase };
+          });
+        }
+
+        // render arrayed paths from current base points
+        const arrayRadius = (arrayDist / 100) * 200;
+        for (const path of paths) {
+          const shape = shapes[path.shapeIndex];
+          const a = path.angle;
+          const ca = Math.cos(a), sa = Math.sin(a);
+          const tp = shape.points.map((p) => ({
+            x: p.x * ca - p.y * sa + arrayRadius * ca,
+            y: p.x * sa + p.y * ca + arrayRadius * sa,
+          }));
+          path.el.setAttribute("d", smoothPath(tp));
+          path.el.setAttribute("fill", shape.color);
+        }
+        requestAnimationFrame(frame);
+      }
+
+      // ---- interaction ----------------------------------------------------
+      const stage = document.getElementById("stage");
+      stage.addEventListener("pointermove", (e) => {
+        const r = stage.getBoundingClientRect();
+        mouse = { x: ((e.clientX - r.left) / r.width - 0.5) * 400, y: ((e.clientY - r.top) / r.height - 0.5) * 400 };
+      });
+      stage.addEventListener("click", (e) => {
+        if (e.target.closest(".panel, .topbar")) return;
+        shapeCount = (shapeCount % MAX_SHAPES) + 1;
+        document.getElementById("hint").textContent = `Shape count: ${shapeCount} — click anywhere to change`;
+        buildPaths();
+      });
+
+      function bindSlider(id, set, regen) {
+        const input = document.getElementById(id), out = document.getElementById(id + "Out");
+        input.addEventListener("input", () => {
+          const v = +input.value; out.textContent = String(v).padStart(2, "0");
+          set(v); if (regen) regenerate(); // array-distance is read live by the loop
+        });
+      }
+      bindSlider("seed", (v) => (seed = v), true);
+      bindSlider("size", (v) => (size = v), true);
+      bindSlider("dist", (v) => (arrayDist = v), false);
+
+      init();
+      frame();
+    </script>
+  </body>
+</html>
