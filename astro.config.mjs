@@ -11,7 +11,7 @@ export default defineConfig({
   // <user>.github.io/<repo>, so `base` must match the repo name.
   // If you move to a custom domain or a user-site (user.github.io), set base to '/'.
   site: 'https://lewismconte.github.io',
-  base: '/folio',
+  base: '/portfolio',
   trailingSlash: 'ignore',
   integrations: [
     mdx(),

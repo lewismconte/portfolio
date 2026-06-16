@@ -1,4 +1,4 @@
-// Prefix an internal path with the configured `base` (e.g. "/folio").
+// Prefix an internal path with the configured `base` (e.g. "/portfolio").
 // Use for every internal <a href> and asset URL so links work on GitHub Pages.
 export function withBase(path: string): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');

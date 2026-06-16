@@ -19,7 +19,7 @@ Requires [Node.js](https://nodejs.org) 20.3+ (or 22+).
 
 ```bash
 npm install      # first time only
-npm run dev      # start the dev server → http://localhost:4321/folio
+npm run dev      # start the dev server → http://localhost:4321/portfolio
 ```
 
 | Command          | What it does                                            |
@@ -98,7 +98,7 @@ Appears at `/blog/my-post` and in the RSS feed at `/rss.xml`.
 1. Drop a **self-contained** app into its own folder in `public/lab/`:
    `public/lab/my-tool/index.html`. It's served verbatim and can use
    canvas/WebGL/three.js/whatever.
-   **Use relative asset paths** (`./script.js`, not `/script.js`) — the site lives under `/folio/`.
+   **Use relative asset paths** (`./script.js`, not `/script.js`) — the site lives under `/portfolio/`.
 2. Register it with `src/content/lab/my-tool.md`:
 
 ```markdown
@@ -127,9 +127,9 @@ Deployment is automatic via [`.github/workflows/deploy.yml`](.github/workflows/d
 
 ### One-time GitHub setup (you must do these — they can't be scripted)
 
-1. Create a GitHub repo named **`folio`** and push this project to its `main` branch.
-   The repo name matters: it makes the site live at `lewismconte.github.io/folio`, which is
-   why `base` is `/folio` (see below).
+1. Create a GitHub repo named **`portfolio`** and push this project to its `main` branch.
+   The repo name matters: it makes the site live at `lewismconte.github.io/portfolio`, which is
+   why `base` is `/portfolio` (see below). The old Next.js `folio` repo is left untouched.
 2. In the repo: **Settings → Pages → Build and deployment → Source → "GitHub Actions"**.
 3. Push to `main` (or run the workflow from the **Actions** tab). The first run publishes the site.
 
@@ -139,10 +139,10 @@ Configured in [`astro.config.mjs`](astro.config.mjs):
 
 ```js
 site: 'https://lewismconte.github.io',
-base: '/folio',
+base: '/portfolio',
 ```
 
-- **Keeping the repo name `folio`** → leave these as-is. Site: `lewismconte.github.io/folio`.
+- **Keeping the repo name `portfolio`** → leave these as-is. Site: `lewismconte.github.io/portfolio`.
 - **A custom domain** (e.g. `lewisconte.com`) → set `base: '/'`, update `site`, add the domain in
   **Settings → Pages → Custom domain**, and create `public/CNAME` containing the domain.
 - **A user site** (repo named `lewismconte.github.io`) → set `base: '/'`.
